@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Detroit Civic Compass
 
-## Getting Started
+A presales demonstration of a **Scalable Voter Education Platform** for the City of Detroit, built for an RFP response. It personalizes civic information by ZIP code and presents issue-centric content (housing, education, public safety, transportation, healthcare, environment) instead of just listing candidates.
 
-First, run the development server:
+No database is used anywhere. All content is static TypeScript seed data under `data/`, optionally mutated in an in-browser Zustand store for the Admin Panel's demo CRUD.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The demo covers 37 Detroit-area ZIP codes (48201–48243) — try `48226` (Downtown), `48219` (Northwest), or `48209` (Southwest/Mexicantown).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Admin Panel: [http://localhost:3000/admin/login](http://localhost:3000/admin/login) — demo credentials `admin` / `admin123` (demonstration only, not real authentication).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # production build
+npm run lint    # eslint
+```
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · shadcn/ui · Lucide icons · Framer Motion · Recharts · React Hook Form + Zod · Zustand
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+"Backend" is implemented as Next.js Route Handlers under `app/api/**` (mock REST endpoints serving the static seed data with simulated latency) rather than a separate FastAPI process — see `.claude/plans` history for the reasoning if present, or just: it keeps the whole demo to a single `npm run dev`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Data & sourcing
 
-## Deploy on Vercel
+Real, current officeholders and legislation (Detroit Mayor, City Council, MI Governor, US Senators/House, state legislators, 2026 Governor's race candidates, and several real Michigan bills) are compiled from official `.gov` sources — see `sourceIds` on each record in `data/*.ts` and the citations in `data/sources.ts`. Anything that couldn't be confirmed (mainly ZIP-to-district boundary mappings, and all photos) is explicitly flagged `confidence: "demo-data"` and surfaced as a "Demo Data" badge in the UI — most visibly on the **Why This Information** and **Source Transparency** pages.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project layout
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/(site)/        Public pages: landing, dashboard, issues, candidates,
+                    representatives, sources, audit trail, search
+app/admin/          Admin login + sidebar-shelled dashboard/CRUD/analytics
+app/api/             Mock REST route handlers
+components/          UI building blocks (components/ui is shadcn-generated)
+data/                Seed data (issues, representatives, candidates, legislation,
+                     sources, audit records, metadata, analytics)
+store/               Zustand stores (selected ZIP, admin-editable mock data)
+lib/                 Types, utils, auth (demo), search index
+```

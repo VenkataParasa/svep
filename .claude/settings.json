@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes create-next-app@latest svep-tmp --typescript --tailwind --eslint --app --src-dir=false --import-alias \"@/*\" --use-npm --turbopack --yes)",
+      "Bash(npm view *)",
+      "Bash(rm -f AGENTS.md CLAUDE.md)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install *)",
+      "WebSearch",
+      "WebFetch(domain:mi-boe.entellitrak.com)",
+      "WebFetch(domain:www.michigan.gov)",
+      "WebFetch(domain:detroitmi.gov)",
+      "WebFetch(domain:detroit.legistar.com)",
+      "Bash(node scripts/validate_palette.js \"#0057b8,#1baf7a,#eda100,#008300,#4a3aa7,#e34948,#e87ba4,#eb6834\" --mode light --surface \"#ffffff\")",
+      "Bash(node scripts/validate_palette.js \"#3b8ee6,#199e70,#c98500,#008300,#9085e9,#e66767,#d55181,#d95926\" --mode dark --surface \"#101a2e\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\chara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-chara-SVEP\\\\0a0ffc84-6f96-4de0-9afe-71e9fa955db0\\\\scratchpad\\\\shots2\")",
+      "Bash(node _smoke2.mjs)",
+      "Bash(node _check2.mjs)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter \\\\\"CommandLine LIKE '%next dev%'\\\\\" | Select-Object ProcessId\")",
+      "Bash(powershell -Command \"Stop-Process -Id 29628,27796,17884,3404,24592,20884 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(curl -sL \"https://detroitmi.gov/themes/custom/detroitmi/logo.png\" -o /tmp/detroit-logo.png -w \"%{http_code}\\\\n\")",
+      "Bash(file /tmp/detroit-logo.png)",
+      "Bash(ls -la /tmp/detroit-logo.png)",
+      "Bash(cp /tmp/detroit-logo.png \"c:\\\\Users\\\\chara\\\\SVEP\\\\public\\\\detroit-logo.png\" && ls \"c:\\\\Users\\\\chara\\\\SVEP\\\\public\")",
+      "Bash(sed -i 's/| Detroit Civic Compass/| City of Detroit Voter Education Platform/g' \"app/\\(site\\)/dashboard/page.tsx\" \"app/\\(site\\)/search/page.tsx\" \"app/\\(site\\)/why-this-information/page.tsx\")",
+      "Bash(sed -i 's/Civic Compass platform/Voter Education Platform/g' data/audit-records.ts)",
+      "Bash(sed -i 's/Detroit Civic Compass mock data layer/City of Detroit Voter Education Platform mock data layer/' lib/types.ts)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(node _smoke3.mjs)",
+      "Bash(sed -i 's|http://localhost:3002|http://localhost:3000|' _smoke3.mjs)",
+      "Bash(curl -s http://localhost:3000/)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -match 'next|start-server|run dev' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; \"stopped\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}
