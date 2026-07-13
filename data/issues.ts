@@ -18,7 +18,7 @@ export const issues: Issue[] = [
       "Easing lot-division rules could speed up new home construction on vacant land, a major issue in a city with significant vacant lots. A cap on corporate ownership of single-family homes would aim to keep more starter homes available to individual buyers rather than institutional landlords, potentially affecting rental costs and home prices across Detroit neighborhoods.",
     relatedDepartments: [{ name: "Housing and Revitalization Department (HRD)" }],
     legislationIds: ["leg-sb23-2025", "leg-sb971-2026"],
-    representativeIds: ["rep-mayor-sheffield", "rep-governor-whitmer", "rep-council-d5-miller"],
+    representativeIds: ["rep-mayor-duggan", "rep-governor-whitmer", "rep-council-d5-sheffield"],
     candidateIds: ["cand-benson-jocelyn", "cand-duggan-mike"],
     publicDocuments: [
       { title: "Senate Bill 23 of 2025 (Public Act 58) — full bill text", type: "bill", url: "https://www.legislature.mi.gov/Bills/Bill?ObjectName=2025-SB-0023", date: "2025-12-15" },
@@ -71,7 +71,7 @@ export const issues: Issue[] = [
       { name: "Detroit Police Department (DPD)" },
     ],
     legislationIds: ["leg-hb6144-6146-2025", "leg-eo-2026-13"],
-    representativeIds: ["rep-mayor-sheffield", "rep-governor-whitmer", "rep-council-president-tate"],
+    representativeIds: ["rep-mayor-duggan", "rep-governor-whitmer", "rep-council-d1-tate"],
     candidateIds: ["cand-james-john"],
     publicDocuments: [
       { title: "Executive Order 2026-13 — Gun Violence Prevention Task Force", type: "publication", url: "https://www.michigan.gov/whitmer/news/press-releases/2026/06/04/whitmer-re-establishes-gun-violence-prevention-task-force-to-keep-families-safe", date: "2026-06-04" },
@@ -97,7 +97,7 @@ export const issues: Issue[] = [
       { name: "Regional Transit Authority of Southeast Michigan (RTA)", url: "https://www.rtamichigan.org/planning-policy-programs/master-plan" },
     ],
     legislationIds: [],
-    representativeIds: ["rep-mayor-sheffield"],
+    representativeIds: ["rep-mayor-duggan"],
     candidateIds: ["cand-duggan-mike", "cand-james-john"],
     publicDocuments: [
       { title: "DDOT Service Expansion Announcement", type: "publication", url: "https://detroitmi.gov/news/ddot-announces-new-service-expansions-effective-today" },
@@ -124,7 +124,7 @@ export const issues: Issue[] = [
       { name: "Detroit Employment Solutions Corporation (Detroit at Work)", url: "https://detroitmi.gov/node/23931" },
     ],
     legislationIds: [],
-    representativeIds: ["rep-mayor-sheffield"],
+    representativeIds: ["rep-mayor-duggan"],
     candidateIds: [],
     publicDocuments: [
       { title: "Motor City Match Round 26 Awards", type: "publication", url: "https://detroitmi.gov/news/motor-city-matchs-round-26-awards-help-launch-new-businesses-17-detroit-neighborhoods", date: "2026-01-20" },
@@ -171,7 +171,7 @@ export const issues: Issue[] = [
       "The new health plan is meant to guide where the city and partners direct resources over the next three years — including where new clinics, food access programs, or maternal health services are prioritized — directly shaping healthcare access in Detroit neighborhoods starting summer 2026.",
     relatedDepartments: [{ name: "Detroit Health Department", url: "https://detroitmi.gov/departments/detroit-health-department" }],
     legislationIds: [],
-    representativeIds: ["rep-mayor-sheffield"],
+    representativeIds: ["rep-mayor-duggan"],
     candidateIds: [],
     publicDocuments: [
       { title: "Community Health Roadmap (CHA/CHIP 2026-2029)", type: "report", url: "https://detroitmi.gov/news/mayor-sheffield-detroit-health-department-release-community-health-roadmap-informed-6000-detroiters" },
@@ -197,7 +197,7 @@ export const issues: Issue[] = [
       { name: "Michigan Department of Natural Resources (Belle Isle Park)", url: "https://www.michigan.gov/recsearch/parks/belleisle" },
     ],
     legislationIds: [],
-    representativeIds: ["rep-mayor-sheffield"],
+    representativeIds: ["rep-mayor-duggan"],
     candidateIds: ["cand-duggan-mike"],
     publicDocuments: [
       { title: "Joe Louis Greenway — Official Project Page", type: "publication", url: "https://detroitmi.gov/departments/general-services-department/joe-louis-greenway" },
@@ -209,6 +209,29 @@ export const issues: Issue[] = [
     lastUpdated: "2026-05-01",
     demoDataNote:
       "Greenway mileage-progress figures and the reported Belle Isle privatization-plan rejection are sourced from local news coverage (Crain's Detroit, Model D, Planet Detroit), not a directly fetched official .gov press release — treat as well-corroborated but not primary-source-confirmed.",
+  },
+  {
+    id: "issue-taxation",
+    slug: "taxation",
+    title: "Taxation",
+    icon: "BadgeDollarSign",
+    summary: "Local property tax assessments, state income tax policies, and corporate tax incentives.",
+    plainLanguageSummary:
+      "Taxation in Michigan involves state-level income and sales taxes, alongside local property taxes. In Detroit, property tax assessments and the use of tax abatements to spur development are major topics of debate. Recent legislative efforts have focused on adjusting tax rates and credits to balance state revenues with economic relief for residents.",
+    communityImpact:
+      "Changes to local property tax rates or state income tax credits directly impact residents' cost of living. Furthermore, the city's use of tax incentives for developers is heavily debated as it trades immediate tax revenue for long-term neighborhood revitalization and job creation.",
+    relatedDepartments: [
+      { name: "Michigan Department of Treasury", url: "https://www.michigan.gov/treasury" },
+      { name: "Detroit Office of the Assessor", url: "https://detroitmi.gov/departments/office-chief-financial-officer/ocfo-divisions/office-assessor" },
+    ],
+    legislationIds: [],
+    representativeIds: ["rep-mayor-duggan", "rep-governor-whitmer"],
+    candidateIds: [],
+    publicDocuments: [],
+    sourceIds: [],
+    status: "active",
+    confidence: "verified",
+    lastUpdated: "2026-05-15",
   },
 ];
 

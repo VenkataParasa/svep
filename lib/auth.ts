@@ -1,8 +1,9 @@
+import { ADMIN_COOKIE_NAME } from "./constants";
+
 // Demo-only authentication. There is no real backend or session store —
 // this exists purely to gate the Admin Panel for the presales demo.
 export const DEMO_ADMIN_USERNAME = "admin";
 export const DEMO_ADMIN_PASSWORD = "admin123";
-export const ADMIN_COOKIE_NAME = "svep_admin";
 
 export function setAdminCookie() {
   if (typeof document === "undefined") return;

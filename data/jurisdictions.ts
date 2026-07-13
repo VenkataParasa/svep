@@ -18,23 +18,23 @@ import type { Confidence, ZipJurisdiction } from "@/lib/types";
 //   Harper Woods, Ecorse, the Grosse Pointes, Redford Twp) say so
 //   plainly: Detroit's mayor and council do not govern there.
 
-const MAYOR = "rep-mayor-sheffield";
+const MAYOR = "rep-mayor-duggan";
 const AT_LARGE = ["rep-council-protem-young", "rep-council-atlarge-waters"];
 const STATEWIDE = [
   "rep-governor-whitmer",
   "rep-ltgov-gilchrist",
   "rep-ussenate-peters",
-  "rep-ussenate-slotkin",
+  "rep-ussenate-stabenow",
 ];
 
 const COUNCIL_IDS: Record<string, string> = {
-  D1: "rep-council-president-tate",
+  D1: "rep-council-d1-tate",
   D2: "rep-council-d2-whitfield-calloway",
   D3: "rep-council-d3-benson",
   D4: "rep-council-d4-johnson",
-  D5: "rep-council-d5-miller",
+  D5: "rep-council-d5-sheffield",
   D6: "rep-council-d6-santiago-romero",
-  D7: "rep-council-d7-mccampbell",
+  D7: "rep-council-d7-durhal",
 };
 
 const COUNCIL_LABELS: Record<string, string> = {

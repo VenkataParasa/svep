@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Source {
+  id                 String   @id @default(cuid())
+  name               String
+  type               String   // "government", "legislative", "news", "nonprofit", "campaign"
+  url                String
+  verificationStatus String   // "verified", "pending", "unverified"
+  lastUpdated        DateTime @default(now())
+  notes              String?
+
+  fieldMetadata      FieldMetadata[]
+  representatives    Representative[] @relation("RepresentativeSources")
+  issues             Issue[]          @relation("IssueSources")
+  legislation        Legislation[]    @relation("LegislationSources")
+}
+
+model JurisdictionBoundary {
+  id              String   @id @default(cuid())
+  boundaryType    String   // e.g. "Congressional", "StateHouse", "StateSenate"
+  boundaryId      String   // e.g. "MI-13"
+  representativeId String? // Links to a Representative
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Representative {
+  id               String   @id @default(cuid())
+  name             String
+  office           String
+  level            String   // "federal", "state", "city"
+  party            String   // "Democratic", "Republican", "Independent", "Nonpartisan", "Other"
+  jurisdiction     String
+  district         String?
+  photoUrl         String?
+  isDemoPhoto      Boolean  @default(false)
+  confidence       String   // "verified", "demo-data"
+  bio              String?
+  demoDataNote     String?
+  contactWebsite   String?
+  contactPhone     String?
+  contactEmail     String?
+  
+  // Standard USPS Address Fields
+  addressLine1     String?
+  addressLine2     String?
+  city             String?
+  state            String?
+  zipCode          String?
+  zipPlus4         String?
+  
+  // Relations
+  sources          Source[] @relation("RepresentativeSources")
+  issues           Issue[]  @relation("IssueRepresentatives")
+  issuePositions   IssuePosition[]
+  metadata         FieldMetadata[]
+}
+
+model IssuePosition {
+  id               String   @id @default(cuid())
+  issueId          String
+  summary          String
+
+  representativeId String
+  representative   Representative @relation(fields: [representativeId], references: [id], onDelete: Cascade)
+}
+
+// Field-Level Metadata for Transparency UI
+model FieldMetadata {
+  id               String   @id @default(cuid())
+  entityType       String   // e.g., "Representative", "IssuePosition"
+  entityId         String   // The ID of the record this applies to
+  field            String   // e.g., "bio", "summary"
+  confidenceScore  Int      // 0-100
+  version          String
+  lastUpdated      DateTime @default(now())
+
+  // The source from which this specific field was extracted
+  sourceId         String
+  source           Source   @relation(fields: [sourceId], references: [id])
+  
+  // Optional relations to quickly look up
+  representativeId String?
+  representative   Representative? @relation(fields: [representativeId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId, field])
+}
+
+model AuditRecord {
+  id           String   @id @default(cuid())
+  entityType   String   // "representative", "candidate", "issue", "legislation", "jurisdiction"
+  entityId     String
+  entityLabel  String
+  stage        String   // "retrieved", "verified", "processed", "displayed"
+  timestamp    DateTime @default(now())
+  source       String
+  version      String
+  status       String   // "success", "warning", "error"
+}
+
+model VoterInteraction {
+  id              String   @id @default(cuid())
+  voterVanId      String?  // External ID returned by NGP VAN
+  actionType      String   // e.g., "AddressLookup", "PledgeToVote"
+  details         String?  // JSON payload of the action
+  timestamp       DateTime @default(now())
+  syncStatus      String   @default("pending") // "pending", "synced", "synced_mock", "failed"
+}
+
+model Issue {
+  id                   String   @id @default(cuid())
+  slug                 String   @unique
+  title                String
+  icon                 String
+  summary              String
+  plainLanguageSummary String
+  communityImpact      String
+  status               String   @default("active")
+  confidence           String   @default("demo-data")
+  demoDataNote         String?
+  lastUpdated          DateTime @default(now())
+
+  // Relations
+  representatives      Representative[] @relation("IssueRepresentatives")
+  sources              Source[]         @relation("IssueSources")
+  departments          RelatedDepartment[]
+  publicDocuments      PublicDocument[]
+  legislation          Legislation[]
+}
+
+model RelatedDepartment {
+  id       String  @id @default(cuid())
+  name     String
+  url      String?
+  issueId  String
+  issue    Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model PublicDocument {
+  id       String  @id @default(cuid())
+  title    String
+  type     String
+  url      String
+  date     String?
+  issueId  String
+  issue    Issue   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model Legislation {
+  id             String   @id @default(cuid())
+  billNumber     String
+  title          String
+  summary        String
+  status         String   // "introduced", "in committee", "passed", "signed into law", "enacted"
+  sponsors       String   // JSON string array
+  level          String   // "federal", "state", "city"
+  confidence     String   @default("demo-data")
+  demoDataNote   String?
+  lastUpdated    DateTime @default(now())
+
+  // Relations
+  relatedIssueId String
+  issue          Issue    @relation(fields: [relatedIssueId], references: [id], onDelete: Cascade)
+  
+  sources        Source[] @relation("LegislationSources")
+}

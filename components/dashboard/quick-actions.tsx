@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenCheck, FileClock, HelpCircle, ListChecks } from "lucide-react";
+import { BookOpenCheck, FileClock, HelpCircle, ListChecks, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function QuickActions({ zip }: { zip: string }) {
   const actions = [
+    { href: `/officials?zip=${zip}`, label: "Elected Officials", icon: Users },
     { href: "/issues", label: "Browse All Issues", icon: ListChecks },
     { href: "/sources", label: "Source Transparency", icon: BookOpenCheck },
     { href: "/audit-trail", label: "View Audit Trail", icon: FileClock },

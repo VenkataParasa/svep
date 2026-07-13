@@ -11,14 +11,14 @@ import { CandidateCard } from "@/components/candidates/candidate-card";
 import { LegislationCard } from "@/components/legislation/legislation-card";
 import { SourceList } from "@/components/shared/source-list";
 import { PublicDocumentsList } from "@/components/shared/public-documents-list";
-import { issues, getIssueBySlug } from "@/data/issues";
-import { getRepresentativeById } from "@/data/representatives";
+import { getIssueBySlug as getStaticIssue } from "@/data/issues";
 import { getCandidateById } from "@/data/candidates";
-import { getLegislationById } from "@/data/legislation";
-import { sources } from "@/data/sources";
 import { formatDate } from "@/lib/utils";
+import { prisma as db } from "@/lib/prisma";
+import type { Confidence, Legislation, PublicDocument, Representative, Source } from "@/lib/types";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const issues = await db.issue.findMany({ select: { slug: true } });
   return issues.map((issue) => ({ slug: issue.slug }));
 }
 
@@ -28,13 +28,25 @@ export default async function IssueDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const issue = getIssueBySlug(slug);
+  
+  const issue = await db.issue.findUnique({
+    where: { slug },
+    include: {
+      departments: true,
+      publicDocuments: true,
+      representatives: true,
+      sources: true,
+      legislation: true
+    }
+  });
+  
   if (!issue) notFound();
 
-  const relatedLegislation = issue.legislationIds.map(getLegislationById).filter((l): l is NonNullable<typeof l> => Boolean(l));
-  const relatedReps = issue.representativeIds.map(getRepresentativeById).filter((r): r is NonNullable<typeof r> => Boolean(r));
-  const relatedCandidates = issue.candidateIds.map(getCandidateById).filter((c): c is NonNullable<typeof c> => Boolean(c));
-  const relatedSources = sources.filter((s) => issue.sourceIds.includes(s.id));
+  // Fallback for static unmigrated Candidate relation
+  const staticIssue = getStaticIssue(slug);
+  const relatedCandidates = staticIssue ? staticIssue.candidateIds.map(getCandidateById).filter((c): c is NonNullable<typeof c> => Boolean(c)) : [];
+
+  const relatedLegislation = issue.legislation;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -49,8 +61,8 @@ export default async function IssueDetailPage({
             <h1 className="text-3xl font-semibold tracking-tight">{issue.title}</h1>
             <p className="mt-1 max-w-2xl text-muted-foreground">{issue.summary}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <ConfidenceBadge confidence={issue.confidence} note={issue.demoDataNote} />
-              <span className="text-xs text-muted-foreground">Last updated {formatDate(issue.lastUpdated)}</span>
+              <ConfidenceBadge confidence={issue.confidence as unknown as Confidence} note={issue.demoDataNote || undefined} />
+              <span className="text-xs text-muted-foreground">Last updated {formatDate(issue.lastUpdated.toISOString())}</span>
             </div>
           </div>
         </div>
@@ -78,14 +90,14 @@ export default async function IssueDetailPage({
         </CardContent>
       </Card>
 
-      {issue.relatedDepartments.length > 0 && (
+      {issue.departments.length > 0 && (
         <section className="mt-10">
           <h2 className="flex items-center gap-2 text-xl font-semibold">
             <Building2 className="size-5 text-primary" />
             Related Departments
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            {issue.relatedDepartments.map((dept) =>
+            {issue.departments.map((dept) =>
               dept.url ? (
                 <a
                   key={dept.name}
@@ -113,22 +125,27 @@ export default async function IssueDetailPage({
         <section className="mt-10">
           <h2 className="text-xl font-semibold">Related Legislation</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {relatedLegislation.map((leg) => (
-              <LegislationCard key={leg.id} legislation={leg} />
-            ))}
+            {relatedLegislation.map((leg) => {
+              const formattedLeg = {
+                ...leg,
+                sponsors: JSON.parse(leg.sponsors),
+                lastUpdated: leg.lastUpdated.toISOString()
+              };
+              return <LegislationCard key={leg.id} legislation={formattedLeg as unknown as Legislation} />;
+            })}
           </div>
         </section>
       )}
 
-      {relatedReps.length > 0 && (
+      {issue.representatives.length > 0 && (
         <section className="mt-10">
           <h2 className="flex items-center gap-2 text-xl font-semibold">
             <Users2 className="size-5 text-primary" />
             Representatives Involved
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {relatedReps.map((rep) => (
-              <RepresentativeListItem key={rep.id} representative={rep} />
+            {issue.representatives.map((rep) => (
+              <RepresentativeListItem key={rep.id} representative={rep as unknown as Representative} />
             ))}
           </div>
         </section>
@@ -154,7 +171,7 @@ export default async function IssueDetailPage({
           Public Documents
         </h2>
         <div className="mt-4">
-          <PublicDocumentsList documents={issue.publicDocuments} />
+          <PublicDocumentsList documents={issue.publicDocuments as unknown as PublicDocument[]} />
         </div>
       </section>
 
@@ -164,7 +181,7 @@ export default async function IssueDetailPage({
           Official references used to compile the information on this page.
         </p>
         <div className="mt-4">
-          <SourceList sources={relatedSources} />
+          <SourceList sources={issue.sources as unknown as Source[]} />
         </div>
       </section>
     </div>

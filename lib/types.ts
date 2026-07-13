@@ -124,7 +124,8 @@ export type IssueCategory =
   | "Economic Development"
   | "Environment"
   | "Healthcare"
-  | "Parks & Recreation";
+  | "Parks & Recreation"
+  | "Taxation";
 
 export interface RelatedDepartment {
   name: string;
@@ -141,6 +142,7 @@ export type PublicDocumentType =
   | "publication";
 
 export interface PublicDocument {
+  id?: string;
   title: string;
   type: PublicDocumentType;
   url: string;

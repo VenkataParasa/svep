@@ -28,10 +28,10 @@ export const auditRecords: AuditRecord[] = [
   { id: "audit-016", entityType: "jurisdiction", entityId: "48226", entityLabel: "ZIP 48226 — Downtown Detroit", stage: "displayed", timestamp: "2026-07-01T05:52:00Z", source: "Voter Education Platform", version: "v2.0.1", status: "success" },
 
   // Mayor Sheffield
-  { id: "audit-017", entityType: "representative", entityId: "rep-mayor-sheffield", entityLabel: "Mayor Mary Sheffield", stage: "retrieved", timestamp: "2026-07-01T05:30:00Z", source: "detroitmi.gov/government/mayors-office", version: "v1.6.2", status: "success" },
-  { id: "audit-018", entityType: "representative", entityId: "rep-mayor-sheffield", entityLabel: "Mayor Mary Sheffield", stage: "verified", timestamp: "2026-07-01T05:33:15Z", source: "Editorial review — official source cross-check", version: "v1.6.2", status: "success" },
-  { id: "audit-019", entityType: "representative", entityId: "rep-mayor-sheffield", entityLabel: "Mayor Mary Sheffield", stage: "processed", timestamp: "2026-07-01T05:34:02Z", source: "Content pipeline", version: "v1.6.2", status: "success" },
-  { id: "audit-020", entityType: "representative", entityId: "rep-mayor-sheffield", entityLabel: "Mayor Mary Sheffield", stage: "displayed", timestamp: "2026-07-01T05:34:20Z", source: "Voter Education Platform", version: "v1.6.2", status: "success" },
+  { id: "audit-017", entityType: "representative", entityId: "rep-mayor-duggan", entityLabel: "Mayor Mary Sheffield", stage: "retrieved", timestamp: "2026-07-01T05:30:00Z", source: "detroitmi.gov/government/mayors-office", version: "v1.6.2", status: "success" },
+  { id: "audit-018", entityType: "representative", entityId: "rep-mayor-duggan", entityLabel: "Mayor Mary Sheffield", stage: "verified", timestamp: "2026-07-01T05:33:15Z", source: "Editorial review — official source cross-check", version: "v1.6.2", status: "success" },
+  { id: "audit-019", entityType: "representative", entityId: "rep-mayor-duggan", entityLabel: "Mayor Mary Sheffield", stage: "processed", timestamp: "2026-07-01T05:34:02Z", source: "Content pipeline", version: "v1.6.2", status: "success" },
+  { id: "audit-020", entityType: "representative", entityId: "rep-mayor-duggan", entityLabel: "Mayor Mary Sheffield", stage: "displayed", timestamp: "2026-07-01T05:34:20Z", source: "Voter Education Platform", version: "v1.6.2", status: "success" },
 
   // Candidate Benson
   { id: "audit-021", entityType: "candidate", entityId: "cand-benson-jocelyn", entityLabel: "Jocelyn Benson (Governor candidate)", stage: "retrieved", timestamp: "2026-07-01T07:00:00Z", source: "Ballotpedia / Michigan SOS", version: "v1.1.0", status: "success" },

@@ -21,8 +21,8 @@ export function PublicDocumentsList({ documents }: { documents: PublicDocument[]
 
   return (
     <ul className="space-y-2">
-      {documents.map((doc) => (
-        <li key={doc.url}>
+      {documents.map((doc, i) => (
+        <li key={doc.id || `${doc.url}-${i}`}>
           <a
             href={doc.url}
             target="_blank"

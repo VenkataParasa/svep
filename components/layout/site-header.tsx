@@ -20,11 +20,9 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/dashboard", label: "My Dashboard" },
-  { href: "/leaders", label: "Leaders & Candidates" },
+  { href: "/dashboard", label: "Civic Dashboard" },
+  { href: "/officials-new", label: "Elected Officials (New)" },
   { href: "/issues", label: "Civic Issues" },
-  { href: "/sources", label: "Sources" },
-  { href: "/audit-trail", label: "Audit Trail" },
 ];
 
 export function SiteHeader() {

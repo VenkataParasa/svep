@@ -44,6 +44,7 @@ const categories: IssueCategory[] = [
   "Environment",
   "Healthcare",
   "Parks & Recreation",
+  "Taxation",
 ];
 
 const iconByCategory: Record<IssueCategory, string> = {
@@ -55,6 +56,7 @@ const iconByCategory: Record<IssueCategory, string> = {
   Environment: "Leaf",
   Healthcare: "HeartPulse",
   "Parks & Recreation": "TreePine",
+  Taxation: "BadgeDollarSign",
 };
 
 const schema = z.object({
@@ -67,6 +69,7 @@ const schema = z.object({
     "Environment",
     "Healthcare",
     "Parks & Recreation",
+    "Taxation",
   ]),
   summary: z.string().min(1, "Summary is required"),
   status: z.enum(["active", "monitoring"]),

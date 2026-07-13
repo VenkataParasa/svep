@@ -27,6 +27,16 @@ export function LocationCard({ jurisdiction }: { jurisdiction: ZipJurisdiction }
           <div className="text-2xl font-semibold">{jurisdiction.zip}</div>
           <div className="text-sm text-muted-foreground">{jurisdiction.neighborhood}, {jurisdiction.city}, MI</div>
         </div>
+
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-border bg-muted mt-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/jurisdiction-map?zip=${jurisdiction.zip}`}
+            alt={`Map of Jurisdiction for ${jurisdiction.zip}`}
+            className="h-full w-full object-cover transition-opacity duration-300"
+            loading="lazy"
+          />
+        </div>
         <dl className="space-y-2.5">
           {rows.map((row) => (
             <div key={row.label} className="flex items-start justify-between gap-3 text-sm">

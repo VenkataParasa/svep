@@ -18,8 +18,8 @@ export const candidates: Candidate[] = [
     electionDate: "2026-11-03",
     status: "active",
     filingStatus: "Filed — active candidate, Democratic primary (August 4, 2026)",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Jocelyn_Benson_in_2022.jpg/800px-Jocelyn_Benson_in_2022.jpg",
+    isDemoPhoto: false,
     confidence: "verified",
     positionSummary:
       "Michigan's current Secretary of State and the Democratic frontrunner for Governor in the 2026 race. Benson's public record centers on election administration and voter access; her gubernatorial campaign has emphasized affordability, jobs, and continuing the state's infrastructure and education investments.",
@@ -44,8 +44,8 @@ export const candidates: Candidate[] = [
     electionDate: "2026-11-03",
     status: "active",
     filingStatus: "Filed — active candidate, Republican primary (August 4, 2026)",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/John_James_118th_Congress_Official_Portrait.jpg/800px-John_James_118th_Congress_Official_Portrait.jpg",
+    isDemoPhoto: false,
     confidence: "verified",
     positionSummary:
       "Currently the U.S. Representative for Michigan's 10th Congressional District and the Republican frontrunner for Governor in 2026. James has built his political career on a business and public-safety-focused platform, including support for tax relief and law-enforcement funding.",
@@ -69,8 +69,8 @@ export const candidates: Candidate[] = [
     electionDate: "2026-11-03",
     status: "withdrawn",
     filingStatus: "Independent candidacy withdrawn May 21, 2026",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Mike_Duggan_2018.jpg/800px-Mike_Duggan_2018.jpg",
+    isDemoPhoto: false,
     confidence: "verified",
     positionSummary:
       "Former three-term Mayor of Detroit (2014-2025), known for the city's post-bankruptcy recovery, blight removal, and infrastructure investment. Duggan launched an independent campaign for Governor after leaving the mayor's office, but dropped out on May 21, 2026 citing polling and fundraising shortfalls.",

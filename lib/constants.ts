@@ -3,3 +3,5 @@
 export const DATA_RETRIEVED_DATE = "2026-07-06";
 
 export const NOT_AVAILABLE = "Information not available";
+
+export const ADMIN_COOKIE_NAME = "svep_admin";

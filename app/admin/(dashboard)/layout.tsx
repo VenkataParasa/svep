@@ -1,6 +1,16 @@
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { ADMIN_COOKIE_NAME } from "@/lib/constants";
 
-export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const isAuthed = cookieStore.get(ADMIN_COOKIE_NAME)?.value === "1";
+
+  if (!isAuthed) {
+    redirect("/admin/login");
+  }
+
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
