@@ -19,7 +19,7 @@ export default async function OfficialsNewPage({
   searchParams: Promise<{ address?: string }>;
 }) {
   const resolvedParams = await searchParams;
-  const address = resolvedParams.address || "49341";
+  const address = resolvedParams.address || "48226";
 
   const pipeline = new CivicIntelligencePipeline(address);
 

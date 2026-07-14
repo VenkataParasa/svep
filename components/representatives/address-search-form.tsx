@@ -13,7 +13,7 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   const globalZip = useZipContextStore((state) => state.zip);
   const setGlobalZip = useZipContextStore((state) => state.setZip);
   
-  const initialAddress = defaultAddress || searchParams.get("address") || globalZip || "49341";
+  const initialAddress = defaultAddress || searchParams.get("address") || globalZip || "48226";
   const [address, setAddress] = React.useState(initialAddress);
 
   React.useEffect(() => {
@@ -36,7 +36,11 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (address.trim()) {
-      setGlobalZip(address.trim());
+      // The shared dashboard context stores ZIP codes only. Keep a full street
+      // address in this page's URL without replacing the dashboard ZIP.
+      if (/^\d{5}(?:-\d{4})?$/.test(address.trim())) {
+        setGlobalZip(address.trim().slice(0, 5));
+      }
       const params = new URLSearchParams(searchParams);
       params.set("address", address.trim());
       router.push(`/officials-new?${params.toString()}`);
@@ -44,7 +48,7 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-lg items-center gap-2">
+    <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
       <div className="relative flex-1">
         <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input

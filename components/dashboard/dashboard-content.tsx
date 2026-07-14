@@ -113,6 +113,11 @@ export function DashboardContent() {
     (representative) =>
       officeLevelFilter === "all" || representative.level === officeLevelFilter
   );
+  const representativeLevels: { level: GovLevel; label: string }[] = [
+    { level: "federal", label: "Federal" },
+    { level: "state", label: "State" },
+    { level: "city", label: "Local" },
+  ];
   const topIssues = jurisdiction.topIssueIds
     .map(getIssueById)
     .filter((i): i is NonNullable<typeof i> => Boolean(i));
@@ -185,10 +190,38 @@ export function DashboardContent() {
             ) : representativesError ? (
               <p className="text-sm text-destructive">{representativesError}</p>
             ) : visibleRepresentatives.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {visibleRepresentatives.map((rep) => (
-                  <RepresentativeListItem key={rep.id} representative={rep} />
-                ))}
+              <div className="space-y-6">
+                {representativeLevels.map(({ level, label }) => {
+                  const levelRepresentatives = visibleRepresentatives.filter(
+                    (representative) => representative.level === level
+                  );
+                  if (levelRepresentatives.length === 0) return null;
+
+                  return (
+                    <section key={level} aria-labelledby={`representative-level-${level}`}>
+                      <div className="mb-2.5 flex items-center gap-3">
+                        <h3
+                          id={`representative-level-${level}`}
+                          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                          {label}
+                        </h3>
+                        <div className="h-px flex-1 bg-border" />
+                        <span className="text-xs text-muted-foreground">
+                          {levelRepresentatives.length}
+                        </span>
+                      </div>
+                      <div className="space-y-2.5">
+                        {levelRepresentatives.map((representative) => (
+                          <RepresentativeListItem
+                            key={representative.id}
+                            representative={representative}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
