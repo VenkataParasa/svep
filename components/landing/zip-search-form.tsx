@@ -22,10 +22,7 @@ const schema = z.object({
   zip: z
     .string()
     .trim()
-    .regex(/^\d{5}$/, "Enter a 5-digit ZIP code")
-    .refine(isValidZip, {
-      message: `This demo covers ${zipCodes.length} Detroit-area ZIP codes (48201–48243). Try 48226 (Downtown) or 48219 (Northwest).`,
-    }),
+    .min(5, "Enter a full street address or 5-digit ZIP code"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -39,9 +36,35 @@ export function ZipSearchForm({ className }: { className?: string }) {
     defaultValues: { zip: "" },
   });
 
-  function onSubmit(values: FormValues) {
-    setZip(values.zip);
-    router.push(`/dashboard?zip=${values.zip}`);
+  async function onSubmit(values: FormValues) {
+    const location = values.zip.trim();
+    let resolvedZip = location;
+
+    if (!/^\d{5}$/.test(location)) {
+      try {
+        const response = await fetch(`/api/v1/geocode?address=${encodeURIComponent(location)}`);
+        const payload = await response.json();
+        if (!response.ok || !payload.address?.zipCode) {
+          throw new Error(payload.error || "We could not find that address.");
+        }
+        resolvedZip = payload.address.zipCode;
+      } catch (error) {
+        form.setError("zip", {
+          message: error instanceof Error ? error.message : "We could not find that address.",
+        });
+        return;
+      }
+    }
+
+    if (!isValidZip(resolvedZip)) {
+      form.setError("zip", {
+        message: `This demo covers ${zipCodes.length} Detroit-area ZIP codes (48201–48243). The resolved ZIP ${resolvedZip} is outside the covered area.`,
+      });
+      return;
+    }
+
+    setZip(resolvedZip);
+    router.push(`/dashboard?zip=${resolvedZip}`);
   }
 
   return (
@@ -62,9 +85,9 @@ export function ZipSearchForm({ className }: { className?: string }) {
                     <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       {...field}
-                      inputMode="numeric"
-                      maxLength={5}
-                      placeholder="Enter your ZIP code, e.g. 48226"
+                      type="text"
+                      autoComplete="street-address"
+                      placeholder="Enter your full address or ZIP code"
                       className="h-12 rounded-xl pl-9 text-base"
                     />
                   </div>

@@ -15,7 +15,13 @@ import { getIssueBySlug as getStaticIssue } from "@/data/issues";
 import { getCandidateById } from "@/data/candidates";
 import { formatDate } from "@/lib/utils";
 import { prisma as db } from "@/lib/prisma";
-import type { Confidence, Legislation, PublicDocument, Representative, Source } from "@/lib/types";
+import type {
+  Confidence,
+  Legislation,
+  PublicDocument,
+  Representative,
+  Source,
+} from "@/lib/types";
 
 export async function generateStaticParams() {
   const issues = await db.issue.findMany({ select: { slug: true } });
@@ -28,7 +34,7 @@ export default async function IssueDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  
+
   const issue = await db.issue.findUnique({
     where: { slug },
     include: {
@@ -36,21 +42,27 @@ export default async function IssueDetailPage({
       publicDocuments: true,
       representatives: true,
       sources: true,
-      legislation: true
-    }
+      legislation: true,
+    },
   });
-  
+
   if (!issue) notFound();
 
   // Fallback for static unmigrated Candidate relation
   const staticIssue = getStaticIssue(slug);
-  const relatedCandidates = staticIssue ? staticIssue.candidateIds.map(getCandidateById).filter((c): c is NonNullable<typeof c> => Boolean(c)) : [];
+  const relatedCandidates = staticIssue
+    ? staticIssue.candidateIds
+        .map(getCandidateById)
+        .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    : [];
 
   const relatedLegislation = issue.legislation;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ label: "Issues", href: "/issues" }, { label: issue.title }]} />
+      <Breadcrumbs
+        items={[{ label: "Issues", href: "/issues" }, { label: issue.title }]}
+      />
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -58,15 +70,25 @@ export default async function IssueDetailPage({
             <IssueIcon name={issue.icon} className="size-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{issue.title}</h1>
-            <p className="mt-1 max-w-2xl text-muted-foreground">{issue.summary}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {issue.title}
+            </h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              {issue.summary}
+            </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <ConfidenceBadge confidence={issue.confidence as unknown as Confidence} note={issue.demoDataNote || undefined} />
-              <span className="text-xs text-muted-foreground">Last updated {formatDate(issue.lastUpdated.toISOString())}</span>
+              {/* <ConfidenceBadge confidence={issue.confidence as unknown as Confidence} note={issue.demoDataNote || undefined} /> */}
+              <span className="text-xs text-muted-foreground">
+                Last updated {formatDate(issue.lastUpdated.toISOString())}
+              </span>
             </div>
           </div>
         </div>
-        <Button variant="outline" className="gap-2 rounded-xl" render={<Link href={`/why-this-information?issue=${issue.id}`} />}>
+        <Button
+          variant="outline"
+          className="gap-2 rounded-xl"
+          render={<Link href={`/why-this-information?issue=${issue.id}`} />}
+        >
           <HelpCircle className="size-4" />
           Why am I seeing this?
         </Button>
@@ -78,9 +100,14 @@ export default async function IssueDetailPage({
         </CardHeader>
         <CardContent>
           {issue.nlpSummaryHtml ? (
-            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: issue.nlpSummaryHtml }} />
+            <p
+              className="leading-relaxed text-foreground/90"
+              dangerouslySetInnerHTML={{ __html: issue.nlpSummaryHtml }}
+            />
           ) : (
-            <p className="leading-relaxed text-foreground/90">{issue.plainLanguageSummary}</p>
+            <p className="leading-relaxed text-foreground/90">
+              {issue.plainLanguageSummary}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -91,9 +118,14 @@ export default async function IssueDetailPage({
         </CardHeader>
         <CardContent>
           {issue.nlpCommunityImpactHtml ? (
-            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: issue.nlpCommunityImpactHtml }} />
+            <p
+              className="leading-relaxed text-foreground/90"
+              dangerouslySetInnerHTML={{ __html: issue.nlpCommunityImpactHtml }}
+            />
           ) : (
-            <p className="leading-relaxed text-foreground/90">{issue.communityImpact}</p>
+            <p className="leading-relaxed text-foreground/90">
+              {issue.communityImpact}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -137,9 +169,14 @@ export default async function IssueDetailPage({
               const formattedLeg = {
                 ...leg,
                 sponsors: JSON.parse(leg.sponsors),
-                lastUpdated: leg.lastUpdated.toISOString()
+                lastUpdated: leg.lastUpdated.toISOString(),
               };
-              return <LegislationCard key={leg.id} legislation={formattedLeg as unknown as Legislation} />;
+              return (
+                <LegislationCard
+                  key={leg.id}
+                  legislation={formattedLeg as unknown as Legislation}
+                />
+              );
             })}
           </div>
         </section>
@@ -153,7 +190,10 @@ export default async function IssueDetailPage({
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {issue.representatives.map((rep) => (
-              <RepresentativeListItem key={rep.id} representative={rep as unknown as Representative} />
+              <RepresentativeListItem
+                key={rep.id}
+                representative={rep as unknown as Representative}
+              />
             ))}
           </div>
         </section>
@@ -179,7 +219,9 @@ export default async function IssueDetailPage({
           Public Documents
         </h2>
         <div className="mt-4">
-          <PublicDocumentsList documents={issue.publicDocuments as unknown as PublicDocument[]} />
+          <PublicDocumentsList
+            documents={issue.publicDocuments as unknown as PublicDocument[]}
+          />
         </div>
       </section>
 

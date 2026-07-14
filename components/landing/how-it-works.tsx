@@ -6,7 +6,7 @@ import { MapPin, LayoutDashboard, BookOpenCheck } from "lucide-react";
 const steps = [
   {
     icon: MapPin,
-    title: "1. Enter your ZIP code",
+    title: "1. Enter your address or ZIP code",
     description:
       "Tell us where you live in Detroit — we cover Downtown, Midtown, New Center, and the North End to start.",
   },

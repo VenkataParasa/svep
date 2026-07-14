@@ -28,13 +28,14 @@ export function PositionMethodology({
       <CardContent className="space-y-2 text-sm leading-relaxed text-foreground/90">
         <p>
           Position summaries for {subjectName} are derived exclusively from the{" "}
-          {sourceCount} public source{sourceCount === 1 ? "" : "s"} listed in the Sources
-          section below — official government records, legislative actions, and publicly
-          published campaign materials. The platform does not infer, predict, or generate
-          political opinions: if a position has not been publicly stated, it is shown as
-          &ldquo;Information not available&rdquo; rather than estimated.
+          {sourceCount} public source{sourceCount === 1 ? "" : "s"} listed in
+          the Sources section below — official government records, legislative
+          actions, and publicly published campaign materials. The platform does
+          not infer, predict, or generate political opinions: if a position has
+          not been publicly stated, it is shown as &ldquo;Information not
+          available&rdquo; rather than estimated.
         </p>
-        {confidence === "verified" ? (
+        {/* {confidence === "verified" ? (
           <p className="text-muted-foreground">
             This profile is marked <span className="font-medium text-foreground">Verified</span>:
             its core facts are directly confirmed by at least one official .gov source.
@@ -48,7 +49,7 @@ export function PositionMethodology({
         )}
         {confidence === "verified" && demoDataNote && (
           <p className="text-muted-foreground">{demoDataNote}</p>
-        )}
+        )} */}
       </CardContent>
     </Card>
   );

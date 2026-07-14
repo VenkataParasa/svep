@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 // ==========================================
 // CONFIGURATION: SYSTEM API CREDENTIALS
 // ==========================================
-const CICERO_API_KEY = "40e38926bc5ea0a4842d044a28e978c78a6ebaae";
-const GOOGLE_CIVIC_API_KEY = "AIzaSyAaZxaLz6vIBD9uOQPdOp3NvAkJFVkxirw";
-const OPEN_STATES_API_KEY = "9cd19f79-2e38-4ac4-931e-fb0911a35ad7";
-
-//const OPEN_STATES_API_KEY = "f419c3ec-84bc-43b3-b41d-d498693b5456";
+const CICERO_API_KEY = process.env.CICERO_API_KEY;
+const GOOGLE_CIVIC_API_KEY = process.env.GOOGLE_CIVIC_API_KEY;
+const OPEN_STATES_API_KEY = process.env.OPENSTATES_API_KEY;
 
 
-const CICERO_BASE_URL = "https://cicero.azavea.com/v3.1";
+const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
 const GOOGLE_CIVIC_BASE_URL = "https://www.googleapis.com/civicinfo/v2";
 const OPEN_STATES_BASE_URL = "https://v3.openstates.org";
 
@@ -50,6 +49,60 @@ export class CivicIntelligencePipeline {
   private stateCode: string;
   private matrix: Record<string, DistrictData>;
 
+  private async persistOfficialPhoto(official: {
+    id?: number;
+    sk?: number;
+    first_name?: string;
+    last_name?: string;
+    party?: string;
+    photo_origin_url?: string;
+    office?: { title?: string; district?: { district_type?: string } };
+  }): Promise<void> {
+    const photoUrl = official.photo_origin_url?.trim();
+    const name = `${official.first_name || ""} ${official.last_name || ""}`.trim();
+    if (!photoUrl || !name) return;
+
+    const office = official.office?.title || "Elected Official";
+    try {
+      const existing = await prisma.representative.findFirst({ where: { name, office } });
+      if (existing) {
+        if (existing.photoUrl !== photoUrl || existing.isDemoPhoto) {
+          await prisma.representative.update({
+            where: { id: existing.id },
+            data: { photoUrl, isDemoPhoto: false },
+          });
+        }
+        return;
+      }
+
+      const districtType = official.office?.district?.district_type || "";
+      const level = districtType.startsWith("NATIONAL")
+        ? "federal"
+        : districtType.startsWith("STATE")
+          ? "state"
+          : "city";
+      const sourceId = official.sk || official.id || name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      await prisma.representative.create({
+        data: {
+          id: `rep-cicero-${sourceId}`,
+          name,
+          office,
+          level,
+          party: official.party || "Nonpartisan",
+          jurisdiction: this.address,
+          photoUrl,
+          isDemoPhoto: false,
+          confidence: "verified",
+          bio: `Data retrieved from the Cicero API for ${office}.`,
+        },
+      });
+    } catch (error) {
+      // Photo persistence must never prevent officials from being displayed.
+      console.warn(`[Photo Cache] Could not persist photo for ${name}:`, error);
+    }
+  }
+
   constructor(streetAddress: string) {
     this.address = streetAddress;
     this.ocdIds = [];
@@ -77,11 +130,18 @@ export class CivicIntelligencePipeline {
    */
   async fetchIncumbents(): Promise<Record<string, DistrictData>> {
     console.log(`[Tier 1] Querying Cicero for boundaries & incumbents...`);
+    if (!CICERO_API_KEY) {
+      throw new Error("CICERO_API_KEY is not configured.");
+    }
+
     const endpoint = `${CICERO_BASE_URL}/official`;
 
     const params = new URLSearchParams({
       key: CICERO_API_KEY,
-      format: "json"
+      format: "json",
+      // Cicero returns at most 40 officials by default. A full address can
+      // resolve to enough overlapping local bodies to exceed that limit.
+      max: "200"
     });
 
     const cleanAddress = this.address.trim();
@@ -121,21 +181,27 @@ export class CivicIntelligencePipeline {
       this.stateCode = candidate.match_region || "";
 
       const officials = candidate.officials || [];
-      for (const official of officials) {
+      for (const [officialIndex, official] of officials.entries()) {
         const office = official.office || {};
 
-        // Skip appointed officials (those with an empty election_frequency)
-        if (office.chamber?.election_frequency === "") {
+        // Cicero exposes appointment status explicitly. A blank election
+        // frequency can simply mean that frequency data is unavailable.
+        if (office.chamber?.is_appointed === true) {
           continue;
         }
 
         const district = office.district || {};
-        const ocdId = district.ocd_id;
+        const ocdId = district.ocd_id || `cicero-district:${district.id || district.district_id || "unknown"}`;
 
-        if (ocdId) {
+        if (official.first_name || official.last_name) {
+          await this.persistOfficialPhoto(official);
           this.ocdIds.push(ocdId);
           const officeTitle = office.title || "Elected Official";
-          const matrixKey = `${ocdId}#${officeTitle}`;
+          // A district can have multiple people with the same office title (for
+          // example, two U.S. Senators or several at-large council members).
+          // Include the official identity so those records do not overwrite one another.
+          const officialKey = official.id || official.sk || officialIndex;
+          const matrixKey = `${ocdId}#${officeTitle}#${officialKey}`;
 
           const getSocial = (type: string) => {
             if (!official.identifiers) return undefined;
@@ -165,9 +231,11 @@ export class CivicIntelligencePipeline {
       }
 
       // Inject President and Vice President if missing from Cicero response
-      const presKey = "ocd-division/country:us#President";
-      const vpKey = "ocd-division/country:us#Vice President";
-      if (!this.matrix[presKey]) {
+      const hasPresident = Object.values(this.matrix).some(({ office_title }) => office_title === "President");
+      const hasVicePresident = Object.values(this.matrix).some(({ office_title }) => office_title === "Vice President");
+      const presKey = "ocd-division/country:us#President#fallback";
+      const vpKey = "ocd-division/country:us#Vice President#fallback";
+      if (!hasPresident) {
         this.matrix[presKey] = {
           office_title: "President",
           incumbent: {
@@ -183,7 +251,7 @@ export class CivicIntelligencePipeline {
           active_opponents: []
         };
       }
-      if (!this.matrix[vpKey]) {
+      if (!hasVicePresident) {
         this.matrix[vpKey] = {
           office_title: "Vice President",
           incumbent: {
@@ -213,6 +281,11 @@ export class CivicIntelligencePipeline {
    */
   async fetchElectionOpponents(): Promise<Record<string, DistrictData>> {
     console.log(`[Tier 2] Querying Google Civic live election ballots for opponents...`);
+    if (!GOOGLE_CIVIC_API_KEY) {
+      console.log(`[-] GOOGLE_CIVIC_API_KEY is not configured; skipping election opponents.`);
+      return this.matrix;
+    }
+
     const endpoint = `${GOOGLE_CIVIC_BASE_URL}/voterinfo`;
     const params = new URLSearchParams({
       address: this.address,
@@ -276,7 +349,7 @@ export class CivicIntelligencePipeline {
    */
   async inferIncumbentStances(): Promise<Record<string, DistrictData>> {
     console.log(`[Tier 3] Pulling live Open States data to audit legislative behaviors...`);
-    if (!this.stateCode) {
+    if (!this.stateCode || !OPEN_STATES_API_KEY) {
       return this.matrix;
     }
 

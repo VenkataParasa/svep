@@ -46,14 +46,16 @@ export function LeaderRow({
               <h3 className="text-lg font-semibold">{name}</h3>
               <PartyBadge party={party} />
               {tag && <Badge variant="outline">{tag}</Badge>}
-              <ConfidenceBadge confidence={confidence} note={demoDataNote} />
+              {/* <ConfidenceBadge confidence={confidence} note={demoDataNote} /> */}
             </div>
             <p className="mt-0.5 font-medium text-primary">{office}</p>
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
               <Landmark className="size-3.5 shrink-0" />
               {jurisdiction}
             </p>
-            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+              {summary}
+            </p>
             <span className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary">
               View full profile
               <ArrowRight className="size-3.5" />

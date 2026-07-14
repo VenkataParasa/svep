@@ -2,8 +2,9 @@ import * as React from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Shield, User, Users, Globe, Phone, ExternalLink, ThumbsUp, MessageCircle, Briefcase, Camera } from "lucide-react";
+import { CheckCircle2, Shield, Users, Globe, Phone, ExternalLink, ThumbsUp, MessageCircle, Briefcase, Camera } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { PersonAvatar } from "@/components/shared/person-avatar";
 
 interface IncumbentStance {
   category: string;
@@ -65,18 +66,11 @@ export function AggregatorOfficialCard({ data, ocdId }: AggregatorOfficialCardPr
       <CardHeader className="bg-muted/30 pb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4 items-start">
-            {incumbent.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img 
-                src={incumbent.photo_url} 
-                alt={incumbent.name} 
-                className="w-14 h-14 rounded-full object-cover border-2 border-background shadow-sm"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm shrink-0">
-                <User className="w-6 h-6 text-muted-foreground" />
-              </div>
-            )}
+            <PersonAvatar
+              name={incumbent.name || "Unknown Official"}
+              photoUrl={incumbent.photo_url || undefined}
+              className="size-14 border-2 border-background shadow-sm"
+            />
             
             <div>
               <CardDescription className="text-xs font-semibold tracking-wider uppercase mb-1 flex items-center gap-1.5 text-primary">

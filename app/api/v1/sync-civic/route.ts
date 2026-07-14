@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     let candidatesList = [];
 
     if (apiKey && apiKey.length > 5) {
-      const url = `https://app.cicerodata.com/v3.1/official?search_loc=${encodeURIComponent(address)}&format=json&key=${apiKey}`;
+      const url = `https://app.cicerodata.com/v3.1/official?search_loc=${encodeURIComponent(address)}&format=json&max=200&key=${apiKey}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Cicero API Error: ${response.status}`);
@@ -45,9 +45,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No data returned from Cicero API' }, { status: 500 });
     }
 
-    // Filter out officials without an election frequency (appointed/non-elected)
+    // Exclude only chambers Cicero explicitly identifies as appointed.
     const officials = (candidatesList[0].officials || []).filter(
-      (o: { office?: { chamber?: { election_frequency?: string } } }) => o.office?.chamber?.election_frequency !== ""
+      (o: { office?: { chamber?: { is_appointed?: boolean } } }) => o.office?.chamber?.is_appointed !== true
     );
 
     // Prepare Source Record
@@ -84,6 +84,7 @@ export async function POST(request: Request) {
 
       const contactPhone = official.addresses?.[0]?.phone_1 || null;
       const contactWebsite = official.urls?.[0] || null;
+      const photoUrl = official.photo_origin_url || "";
 
       // Upsert Representative
       await db.representative.upsert({
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
           party: official.party || "Nonpartisan",
           contactPhone: contactPhone,
           contactWebsite: contactWebsite,
+          ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
           confidence: "verified",
         },
         create: {
@@ -106,8 +108,8 @@ export async function POST(request: Request) {
           contactPhone: contactPhone,
           contactWebsite: contactWebsite,
           confidence: "verified",
-          isDemoPhoto: true,
-          photoUrl: official.photo_origin_url || "",
+          isDemoPhoto: !photoUrl,
+          photoUrl,
           bio: `Data automatically synced from Cicero API for ${officeTitle}.`
         }
       });

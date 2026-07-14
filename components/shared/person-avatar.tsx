@@ -24,7 +24,8 @@ export function PersonAvatar({
       {photoUrl ? (
         <AvatarImage src={photoUrl} alt={name} />
       ) : (
-        <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`} alt={name} />
+        <></>
+        // <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`} alt={name} />
       )}
       <AvatarFallback className="bg-accent font-semibold text-accent-foreground">
         {initials(name)}
