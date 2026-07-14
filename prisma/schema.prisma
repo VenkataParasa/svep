@@ -52,6 +52,11 @@ model Representative {
   contactPhone     String?
   contactEmail     String?
   
+  // NLP Outputs
+  nlpBioHtml       String?
+  nlpReadabilityScore Float?
+  nlpRequiresReview   Boolean?
+  
   // Standard USPS Address Fields
   addressLine1     String?
   addressLine2     String?
@@ -131,6 +136,12 @@ model Issue {
   demoDataNote         String?
   lastUpdated          DateTime @default(now())
 
+  // NLP Outputs
+  nlpSummaryHtml             String?
+  nlpCommunityImpactHtml     String?
+  nlpReadabilityScore        Float?
+  nlpRequiresReview          Boolean?
+
   // Relations
   representatives      Representative[] @relation("IssueRepresentatives")
   sources              Source[]         @relation("IssueSources")
@@ -168,6 +179,11 @@ model Legislation {
   confidence     String   @default("demo-data")
   demoDataNote   String?
   lastUpdated    DateTime @default(now())
+
+  // NLP Outputs
+  nlpSummaryHtml       String?
+  nlpReadabilityScore  Float?
+  nlpRequiresReview    Boolean?
 
   // Relations
   relatedIssueId String

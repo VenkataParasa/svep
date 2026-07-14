@@ -66,6 +66,11 @@ export interface Representative {
   issuePositions: IssuePosition[];
   sourceIds: string[];
   demoDataNote?: string;
+  
+  // NLP Fields
+  nlpBioHtml?: string | null;
+  nlpReadabilityScore?: number | null;
+  nlpRequiresReview?: boolean | null;
 }
 
 export type CandidateStatus = "active" | "withdrawn" | "incumbent";
@@ -114,6 +119,11 @@ export interface Legislation {
   sourceIds: string[];
   lastUpdated: string;
   demoDataNote?: string;
+  
+  // NLP Fields
+  nlpSummaryHtml?: string | null;
+  nlpReadabilityScore?: number | null;
+  nlpRequiresReview?: boolean | null;
 }
 
 export type IssueCategory =
@@ -167,6 +177,12 @@ export interface Issue {
   confidence: Confidence;
   lastUpdated: string;
   demoDataNote?: string;
+  
+  // NLP Fields
+  nlpSummaryHtml?: string | null;
+  nlpCommunityImpactHtml?: string | null;
+  nlpReadabilityScore?: number | null;
+  nlpRequiresReview?: boolean | null;
 }
 
 export interface ZipJurisdiction {

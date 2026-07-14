@@ -102,7 +102,11 @@ export default async function RepresentativeProfilePage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed text-foreground/90">{representative.bio || NOT_AVAILABLE}</p>
+          {representative.nlpBioHtml ? (
+            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: representative.nlpBioHtml }} />
+          ) : (
+            <p className="leading-relaxed text-foreground/90">{representative.bio || NOT_AVAILABLE}</p>
+          )}
         </CardContent>
       </Card>
 

@@ -77,7 +77,11 @@ export default async function IssueDetailPage({
           <CardTitle>Plain-Language Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed text-foreground/90">{issue.plainLanguageSummary}</p>
+          {issue.nlpSummaryHtml ? (
+            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: issue.nlpSummaryHtml }} />
+          ) : (
+            <p className="leading-relaxed text-foreground/90">{issue.plainLanguageSummary}</p>
+          )}
         </CardContent>
       </Card>
 
@@ -86,7 +90,11 @@ export default async function IssueDetailPage({
           <CardTitle>Community Impact</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed text-foreground/90">{issue.communityImpact}</p>
+          {issue.nlpCommunityImpactHtml ? (
+            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: issue.nlpCommunityImpactHtml }} />
+          ) : (
+            <p className="leading-relaxed text-foreground/90">{issue.communityImpact}</p>
+          )}
         </CardContent>
       </Card>
 

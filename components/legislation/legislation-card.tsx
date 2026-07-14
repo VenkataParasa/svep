@@ -26,7 +26,14 @@ export function LegislationCard({ legislation }: { legislation: Legislation }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">{legislation.summary}</p>
+        {legislation.nlpSummaryHtml ? (
+          <p 
+            className="text-sm text-muted-foreground" 
+            dangerouslySetInnerHTML={{ __html: legislation.nlpSummaryHtml }}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">{legislation.summary}</p>
+        )}
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="outline" className={statusStyles[legislation.status]}>
             {legislation.status}
