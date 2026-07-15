@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { processCivicText } from '@/lib/nlp-client';
 
 export const maxDuration = 300; // Allow maximum 5 minutes for cron execution
