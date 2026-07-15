@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  nlp:
+    build:
+      context: ./nlp_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    networks:
+      - svep-network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NLP_SERVICE_URL=http://nlp:8000/process
+      # DATABASE_URL is automatically pulled from your .env file now!
+    env_file:
+      - .env
+    depends_on:
+      - nlp
+    networks:
+      - svep-network
+
+networks:
+  svep-network:
+    driver: bridge

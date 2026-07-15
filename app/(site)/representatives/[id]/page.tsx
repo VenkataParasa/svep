@@ -22,7 +22,15 @@ import type {
 import { NOT_AVAILABLE } from "@/lib/constants";
 import { getIssueById } from "@/data/issues";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  try {
+    const reps = await db.representative.findMany({ select: { id: true } });
+    return reps.map((r) => ({ id: r.id }));
+  } catch (error) {
+    console.warn("Could not fetch representatives for static generation. Returning empty list.");
+    return [];
+  }
+}
 
 const levelLabel: Record<string, string> = {
   federal: "Federal",
@@ -188,9 +196,8 @@ export default async function RepresentativeProfilePage({
                     {issue?.title ?? position.issueId}
                   </Link>
                   <SourceCitation
-                    field={`Issue Position: ${
-                      issue?.title ?? position.issueId
-                    }`}
+                    field={`Issue Position: ${issue?.title ?? position.issueId
+                      }`}
                     sourceName={
                       positionMeta?.source.name || fallbackSource?.name
                     }

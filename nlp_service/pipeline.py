@@ -1,6 +1,8 @@
 import json
 import re
 import nltk
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 
@@ -171,12 +173,40 @@ def process_civic_document(raw_text: str) -> str:
     
     return json.dumps(result, indent=2)
 
+class TextRequest(BaseModel):
+    text: str
+
+app = FastAPI(title="Civic NLP Pipeline")
+
+@app.post("/process")
+def process_endpoint(req: TextRequest):
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Empty text provided")
+    
+    # Step 1: Summarize
+    summary = extract_summary(req.text)
+    
+    # Step 2: Readability Score
+    readability = score_readability(summary)
+    
+    # Step 3: Glossary Injection
+    html_summary = inject_glossary(summary)
+    
+    return {
+        "original_length": len(req.text),
+        "summary_html": html_summary,
+        "readability_score": readability["score"],
+        "requires_manual_review": readability["requires_manual_review"]
+    }
+
 if __name__ == "__main__":
+    import uvicorn
     import sys
     
-    # Read text from standard input
-    input_text = sys.stdin.read()
-    
-    if input_text.strip():
-        output = process_civic_document(input_text)
-        print(output)
+    if len(sys.argv) > 1 and sys.argv[1] == "--cli":
+        input_text = sys.stdin.read()
+        if input_text.strip():
+            output = process_civic_document(input_text)
+            print(output)
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=8000)

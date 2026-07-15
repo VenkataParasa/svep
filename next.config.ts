@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./prisma/dev.db"]
   },
+  output: "standalone",
   /* config options here */
 };
 

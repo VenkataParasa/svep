@@ -21,8 +21,13 @@ import type {
 } from "@/lib/types";
 
 export async function generateStaticParams() {
-  const issues = await db.issue.findMany({ select: { slug: true } });
-  return issues.map((issue) => ({ slug: issue.slug }));
+  try {
+    const issues = await db.issue.findMany({ select: { slug: true } });
+    return issues.map((issue) => ({ slug: issue.slug }));
+  } catch (error) {
+    console.warn("Could not fetch issues for static generation. Returning empty list.");
+    return [];
+  }
 }
 
 export default async function IssueDetailPage({
