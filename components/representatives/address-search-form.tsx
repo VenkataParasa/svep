@@ -53,7 +53,7 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
         <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Enter full address or ZIP code..."
+          placeholder="Enter full address, ZIP code, or ZIP+4..."
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           className="pl-9"

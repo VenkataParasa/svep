@@ -45,6 +45,9 @@ export function LocationCard({
         </div>
 
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-border bg-muted mt-2">
+          <div className="absolute left-2 top-2 z-10 rounded-md border bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">
+            City Council / local district boundary
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/api/jurisdiction-map?zip=${jurisdiction.zip}`}

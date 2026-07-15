@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Civic Dashboard" },
-  { href: "/officials-new", label: "Elected Officials (New)" },
+  { href: "/officials-new", label: "Elected Officials" },
   { href: "/issues", label: "Civic Issues" },
 ];
 
@@ -44,7 +44,8 @@ export function SiteHeader() {
   const withLocation = (href: string) => {
     if (!zip) return href;
     if (href === "/dashboard") return `${href}?zip=${encodeURIComponent(zip)}`;
-    if (href === "/officials-new") return `${href}?address=${encodeURIComponent(zip)}`;
+    if (href === "/officials-new")
+      return `${href}?address=${encodeURIComponent(zip)}`;
     return href;
   };
 
@@ -62,7 +63,9 @@ export function SiteHeader() {
           />
           <span className="hidden leading-tight md:block">
             <span className="block text-sm font-semibold">City of Detroit</span>
-            <span className="block text-xs text-muted-foreground">Voter Education Platform</span>
+            <span className="block text-xs text-muted-foreground">
+              Voter Education Platform
+            </span>
           </span>
         </Link>
 
@@ -107,7 +110,14 @@ export function SiteHeader() {
 
           <Sheet>
             <SheetTrigger
-              render={<Button variant="ghost" size="icon" className="size-9 lg:hidden" aria-label="Menu" />}
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 lg:hidden"
+                  aria-label="Menu"
+                />
+              }
             >
               <Menu className="size-4" />
             </SheetTrigger>
@@ -123,7 +133,8 @@ export function SiteHeader() {
                     href={withLocation(item.href)}
                     className={cn(
                       "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                      pathname === item.href && "bg-accent text-accent-foreground"
+                      pathname === item.href &&
+                        "bg-accent text-accent-foreground"
                     )}
                   >
                     {item.label}

@@ -6,6 +6,36 @@ import { AggregatorOfficialCard, DistrictData } from "@/components/representativ
 type GovernmentLevel = "local" | "state" | "federal";
 type LevelFilter = GovernmentLevel | "all";
 
+const levelOrder: { id: GovernmentLevel; label: string }[] = [
+  { id: "local", label: "Local" },
+  { id: "state", label: "State" },
+  { id: "federal", label: "Federal" },
+];
+
+function getOfficeRank(level: GovernmentLevel, office: string): number {
+  const title = office.toLowerCase();
+  if (level === "federal") {
+    if (title.includes("vice president")) return 1;
+    if (title.includes("president")) return 0;
+  }
+  if (level === "state") {
+    if (title.includes("lieutenant governor")) return 1;
+    if (title.includes("governor")) return 0;
+  }
+  if (level === "local") {
+    if (title.includes("council president pro tem")) return 3;
+    if (title.includes("council president")) return 2;
+  }
+
+  const hierarchy: Record<GovernmentLevel, string[]> = {
+    local: ["mayor", "county executive", "council president", "council president pro tem", "city council", "council member", "county commissioner", "city clerk", "county clerk", "treasurer", "school board"],
+    state: ["governor", "lieutenant governor", "attorney general", "secretary of state", "state treasurer", "state senator", "senator", "state representative", "representative"],
+    federal: ["president", "vice president", "senator", "representative"],
+  };
+  const rank = hierarchy[level].findIndex((candidate) => title.includes(candidate));
+  return rank === -1 ? hierarchy[level].length : rank;
+}
+
 function getGovernmentLevel(key: string): GovernmentLevel {
   const [ocdId, officeTitle = ""] = key.split("#");
   if (ocdId === "ocd-division/country:us" || ocdId.includes("/cd:")) return "federal";
@@ -30,13 +60,9 @@ export function OfficialsLevelFilter({ officials }: { officials: Record<string, 
     { id: "all", label: "All" },
   ];
 
-  const visibleOfficials = allOfficials
-    .filter(([key]) => activeLevel === "all" || getGovernmentLevel(key) === activeLevel)
-    .sort(([keyA, dataA], [keyB, dataB]) => {
-      const weights = { local: 1, state: 2, federal: 3 };
-      return weights[getGovernmentLevel(keyA)] - weights[getGovernmentLevel(keyB)] ||
-        dataA.office_title.localeCompare(dataB.office_title);
-    });
+  const visibleOfficials = allOfficials.filter(
+    ([key]) => activeLevel === "all" || getGovernmentLevel(key) === activeLevel
+  );
 
   return (
     <div className="space-y-6">
@@ -62,10 +88,33 @@ export function OfficialsLevelFilter({ officials }: { officials: Record<string, 
       </div>
 
       {visibleOfficials.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleOfficials.map(([key, data]) => (
-            <AggregatorOfficialCard key={key} ocdId={key} data={data} />
-          ))}
+        <div className="space-y-8">
+          {levelOrder.map(({ id, label }) => {
+            const levelOfficials = visibleOfficials
+              .filter(([key]) => getGovernmentLevel(key) === id)
+              .sort(([, dataA], [, dataB]) => {
+                const rankDifference = getOfficeRank(id, dataA.office_title) - getOfficeRank(id, dataB.office_title);
+                return rankDifference || dataA.office_title.localeCompare(dataB.office_title) || dataA.incumbent.name.localeCompare(dataB.incumbent.name);
+              });
+            if (levelOfficials.length === 0) return null;
+
+            return (
+              <section key={id} aria-labelledby={`official-level-${id}`}>
+                <div className="mb-4 flex items-center gap-3">
+                  <h2 id={`official-level-${id}`} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </h2>
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">{levelOfficials.length}</span>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {levelOfficials.map(([key, data]) => (
+                    <AggregatorOfficialCard key={key} ocdId={key} data={data} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-xl border border-dashed bg-muted/20 p-8 text-center">

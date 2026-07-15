@@ -30,7 +30,7 @@ export function ZipSearchForm() {
         <Input
           type="text"
           autoComplete="street-address"
-          placeholder="Enter full address or ZIP code..."
+          placeholder="Enter full address, ZIP code, or ZIP+4..."
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           className="pl-9 bg-background/50 backdrop-blur-sm border-border"

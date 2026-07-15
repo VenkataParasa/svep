@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Users, Vote } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { LocationCard } from "@/components/dashboard/location-card";
+import { FederalRepresentationMap } from "@/components/dashboard/federal-representation-map";
+import { SubdivisionRepresentationMap } from "@/components/dashboard/subdivision-representation-map";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RepresentativeListItem } from "@/components/representatives/representative-list-item";
 import { CandidateCard } from "@/components/candidates/candidate-card";
@@ -35,6 +36,61 @@ interface CurrentOfficial {
   level: GovLevel;
   party: Party;
   photoUrl: string;
+}
+
+function getOfficeRank(level: GovLevel, office: string): number {
+  const title = office.toLowerCase();
+
+  // Resolve titles whose names contain a higher office title before applying
+  // the general substring-based hierarchy below.
+  if (level === "federal") {
+    if (title.includes("vice president")) return 1;
+    if (title.includes("president")) return 0;
+  }
+  if (level === "state") {
+    if (title.includes("lieutenant governor")) return 1;
+    if (title.includes("governor")) return 0;
+  }
+  if (level === "city") {
+    if (title.includes("council president pro tem")) return 3;
+    if (title.includes("council president")) return 2;
+  }
+
+  const hierarchy: Record<GovLevel, string[]> = {
+    city: [
+      "mayor",
+      "county executive",
+      "council president",
+      "council president pro tem",
+      "city council",
+      "council member",
+      "county commissioner",
+      "city clerk",
+      "county clerk",
+      "treasurer",
+      "school board",
+    ],
+    state: [
+      "governor",
+      "lieutenant governor",
+      "attorney general",
+      "secretary of state",
+      "state treasurer",
+      "state senator",
+      "senator",
+      "state representative",
+      "representative",
+    ],
+    federal: [
+      "president",
+      "vice president",
+      "senator",
+      "representative",
+    ],
+  };
+
+  const rank = hierarchy[level].findIndex((officeName) => title.includes(officeName));
+  return rank === -1 ? hierarchy[level].length : rank;
 }
 
 export function DashboardContent() {
@@ -114,9 +170,9 @@ export function DashboardContent() {
       officeLevelFilter === "all" || representative.level === officeLevelFilter
   );
   const representativeLevels: { level: GovLevel; label: string }[] = [
-    { level: "federal", label: "Federal" },
-    { level: "state", label: "State" },
     { level: "city", label: "Local" },
+    { level: "state", label: "State" },
+    { level: "federal", label: "Federal" },
   ];
   const topIssues = jurisdiction.topIssueIds
     .map(getIssueById)
@@ -142,13 +198,17 @@ export function DashboardContent() {
             Personalized for {jurisdiction.neighborhood} ({jurisdiction.zip})
           </p>
         </div>
-        <Link
-          href="/#zip-search"
-          className="text-sm font-medium text-primary hover:underline"
-        >
-          Change ZIP code
-        </Link>
       </motion.div>
+
+      <div className="mt-6 rounded-2xl border border-border/80 bg-card p-4 shadow-sm sm:p-5">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">Search another location</h2>
+          <p className="text-xs text-muted-foreground">
+            Enter a Detroit-area street address, ZIP code, or ZIP+4 to update your dashboard.
+          </p>
+        </div>
+        <ZipSearchForm />
+      </div>
 
       <div className="mt-6">
         <QuickActions zip={jurisdiction.zip} />
@@ -192,9 +252,14 @@ export function DashboardContent() {
             ) : visibleRepresentatives.length > 0 ? (
               <div className="space-y-6">
                 {representativeLevels.map(({ level, label }) => {
-                  const levelRepresentatives = visibleRepresentatives.filter(
-                    (representative) => representative.level === level
-                  );
+                  const levelRepresentatives = visibleRepresentatives
+                    .filter((representative) => representative.level === level)
+                    .sort((representativeA, representativeB) => {
+                      const rankDifference =
+                        getOfficeRank(level, representativeA.office) -
+                        getOfficeRank(level, representativeB.office);
+                      return rankDifference || representativeA.office.localeCompare(representativeB.office);
+                    });
                   if (levelRepresentatives.length === 0) return null;
 
                   return (
@@ -211,6 +276,15 @@ export function DashboardContent() {
                           {levelRepresentatives.length}
                         </span>
                       </div>
+                      {level === "federal" && (
+                        <FederalRepresentationMap zip={jurisdiction.zip} />
+                      )}
+                      {level === "state" && (
+                        <SubdivisionRepresentationMap zip={jurisdiction.zip} kind="state" />
+                      )}
+                      {level === "city" && (
+                        <SubdivisionRepresentationMap zip={jurisdiction.zip} kind="local" />
+                      )}
                       <div className="space-y-2.5">
                         {levelRepresentatives.map((representative) => (
                           <RepresentativeListItem

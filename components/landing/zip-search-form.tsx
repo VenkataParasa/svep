@@ -22,7 +22,7 @@ const schema = z.object({
   zip: z
     .string()
     .trim()
-    .min(5, "Enter a full street address or 5-digit ZIP code"),
+    .min(5, "Enter a full street address, ZIP code, or ZIP+4"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -39,8 +39,13 @@ export function ZipSearchForm({ className }: { className?: string }) {
   async function onSubmit(values: FormValues) {
     const location = values.zip.trim();
     let resolvedZip = location;
+    const postalMatch = location.match(/^(\d{5})(?:-\d{4})?$/);
 
-    if (!/^\d{5}$/.test(location)) {
+    if (postalMatch) {
+      // Dashboard jurisdiction records are keyed by the base ZIP. Retain ZIP+4
+      // support at input while matching the corresponding five-digit area.
+      resolvedZip = postalMatch[1];
+    } else {
       try {
         const response = await fetch(`/api/v1/geocode?address=${encodeURIComponent(location)}`);
         const payload = await response.json();
@@ -87,7 +92,7 @@ export function ZipSearchForm({ className }: { className?: string }) {
                       {...field}
                       type="text"
                       autoComplete="street-address"
-                      placeholder="Enter your full address or ZIP code"
+                      placeholder="Enter full address, ZIP code, or ZIP+4"
                       className="h-12 rounded-xl pl-9 text-base"
                     />
                   </div>

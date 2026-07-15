@@ -27,6 +27,7 @@ interface Opponent {
 
 interface DistrictData {
   office_title: string;
+  representative_id?: string;
   incumbent: {
     name: string;
     party: string;
@@ -49,7 +50,7 @@ export class CivicIntelligencePipeline {
   private stateCode: string;
   private matrix: Record<string, DistrictData>;
 
-  private async persistOfficialPhoto(official: {
+  private async persistOfficial(official: {
     id?: number;
     sk?: number;
     first_name?: string;
@@ -57,49 +58,50 @@ export class CivicIntelligencePipeline {
     party?: string;
     photo_origin_url?: string;
     office?: { title?: string; district?: { district_type?: string } };
-  }): Promise<void> {
+  }): Promise<string | undefined> {
     const photoUrl = official.photo_origin_url?.trim();
     const name = `${official.first_name || ""} ${official.last_name || ""}`.trim();
-    if (!photoUrl || !name) return;
+    if (!name) return undefined;
 
     const office = official.office?.title || "Elected Official";
+    const sourceId = official.id || official.sk || `${name}-${office}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const representativeId = `rep-cicero-${sourceId}`;
     try {
-      const existing = await prisma.representative.findFirst({ where: { name, office } });
-      if (existing) {
-        if (existing.photoUrl !== photoUrl || existing.isDemoPhoto) {
-          await prisma.representative.update({
-            where: { id: existing.id },
-            data: { photoUrl, isDemoPhoto: false },
-          });
-        }
-        return;
-      }
-
       const districtType = official.office?.district?.district_type || "";
       const level = districtType.startsWith("NATIONAL")
         ? "federal"
         : districtType.startsWith("STATE")
           ? "state"
           : "city";
-      const sourceId = official.sk || official.id || name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-
-      await prisma.representative.create({
-        data: {
-          id: `rep-cicero-${sourceId}`,
+      await prisma.representative.upsert({
+        where: { id: representativeId },
+        update: {
           name,
           office,
           level,
           party: official.party || "Nonpartisan",
           jurisdiction: this.address,
-          photoUrl,
-          isDemoPhoto: false,
+          ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
+          confidence: "verified",
+        },
+        create: {
+          id: representativeId,
+          name,
+          office,
+          level,
+          party: official.party || "Nonpartisan",
+          jurisdiction: this.address,
+          photoUrl: photoUrl || "",
+          isDemoPhoto: !photoUrl,
           confidence: "verified",
           bio: `Data retrieved from the Cicero API for ${office}.`,
         },
       });
+      return representativeId;
     } catch (error) {
-      // Photo persistence must never prevent officials from being displayed.
-      console.warn(`[Photo Cache] Could not persist photo for ${name}:`, error);
+      // Persistence must never prevent officials from being displayed.
+      console.warn(`[Representative Cache] Could not persist ${name}:`, error);
+      return undefined;
     }
   }
 
@@ -194,7 +196,7 @@ export class CivicIntelligencePipeline {
         const ocdId = district.ocd_id || `cicero-district:${district.id || district.district_id || "unknown"}`;
 
         if (official.first_name || official.last_name) {
-          await this.persistOfficialPhoto(official);
+          const representativeId = await this.persistOfficial(official);
           this.ocdIds.push(ocdId);
           const officeTitle = office.title || "Elected Official";
           // A district can have multiple people with the same office title (for
@@ -213,6 +215,7 @@ export class CivicIntelligencePipeline {
 
           this.matrix[matrixKey] = {
             office_title: officeTitle,
+            representative_id: representativeId,
             incumbent: {
               name: `${official.first_name || ""} ${official.last_name || ""}`.trim(),
               party: official.party || "Unknown",

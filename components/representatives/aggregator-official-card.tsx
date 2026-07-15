@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Shield, Users, Globe, Phone, ExternalLink, ThumbsUp, MessageCircle, Briefcase, Camera } from "lucide-react";
@@ -20,6 +23,7 @@ interface Opponent {
 
 export interface DistrictData {
   office_title: string;
+  representative_id?: string;
   incumbent: {
     name: string;
     party: string;
@@ -42,7 +46,11 @@ interface AggregatorOfficialCardProps {
 }
 
 export function AggregatorOfficialCard({ data, ocdId }: AggregatorOfficialCardProps) {
+  const router = useRouter();
   const { office_title, incumbent, active_opponents } = data;
+  const profileHref = data.representative_id
+    ? `/representatives/${data.representative_id}`
+    : undefined;
 
   const partyColor = (party: string) => {
     const p = party.toLowerCase();
@@ -62,7 +70,21 @@ export function AggregatorOfficialCard({ data, ocdId }: AggregatorOfficialCardPr
   }, {} as Record<string, string[]>);
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden hover:shadow-md transition-shadow">
+    <Card
+      className={`flex flex-col h-full overflow-hidden hover:shadow-md transition-shadow ${profileHref ? "cursor-pointer" : ""}`}
+      role={profileHref ? "link" : undefined}
+      tabIndex={profileHref ? 0 : undefined}
+      onClick={(event) => {
+        if (!profileHref || (event.target as HTMLElement).closest("a, button")) return;
+        router.push(profileHref);
+      }}
+      onKeyDown={(event) => {
+        if (profileHref && event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          router.push(profileHref);
+        }
+      }}
+    >
       <CardHeader className="bg-muted/30 pb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4 items-start">
@@ -170,8 +192,13 @@ export function AggregatorOfficialCard({ data, ocdId }: AggregatorOfficialCardPr
           </div>
         )}
       </CardContent>
-      <CardFooter className="bg-muted/20 border-t py-3 px-6 text-xs text-muted-foreground flex justify-end">
-        <span className="truncate max-w-[300px]" title={ocdId}>{ocdId}</span>
+      <CardFooter className="bg-muted/20 border-t py-3 px-6 text-xs text-muted-foreground flex items-center justify-between gap-3">
+        <span className="truncate max-w-[220px]" title={ocdId}>{ocdId}</span>
+        {profileHref && (
+          <Link href={profileHref} className="shrink-0 font-medium text-primary hover:underline">
+            View profile
+          </Link>
+        )}
       </CardFooter>
     </Card>
   );
