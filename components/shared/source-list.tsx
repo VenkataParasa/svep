@@ -4,14 +4,27 @@ import type { Source } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 
 const verificationStyles: Record<Source["verificationStatus"], string> = {
-  verified: "border-emerald-600/30 bg-emerald-600/10 text-emerald-700 dark:text-emerald-400",
-  pending: "border-amber-600/30 bg-amber-600/10 text-amber-700 dark:text-amber-400",
-  unverified: "border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-300",
+  verified:
+    "border-emerald-600/30 bg-emerald-600/10 text-emerald-700 dark:text-emerald-400",
+  pending:
+    "border-amber-600/30 bg-amber-600/10 text-amber-700 dark:text-amber-400",
+  unverified:
+    "border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-300",
 };
 
-export function SourceList({ sources, className }: { sources: Source[]; className?: string }) {
+export function SourceList({
+  sources,
+  className,
+}: {
+  sources: Source[];
+  className?: string;
+}) {
   if (sources.length === 0) {
-    return <p className="text-sm text-muted-foreground">No sources cataloged for this record yet.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        No sources cataloged for this record yet.
+      </p>
+    );
   }
 
   return (
@@ -29,12 +42,16 @@ export function SourceList({ sources, className }: { sources: Source[]; classNam
                 {source.name}
                 <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
               </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{source.url}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Updated {formatDate(source.lastUpdated)}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {source.url}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Updated {formatDate(source.lastUpdated)}
+              </p>
             </div>
-            <Badge variant="outline" className={cn("shrink-0 font-medium", verificationStyles[source.verificationStatus])}>
+            {/* <Badge variant="outline" className={cn("shrink-0 font-medium", verificationStyles[source.verificationStatus])}>
               {source.verificationStatus}
-            </Badge>
+            </Badge> */}
           </a>
         </li>
       ))}

@@ -6,7 +6,7 @@ import {
   Landmark,
   ShieldCheck,
   Sparkles,
-  Users,
+  MapPinned,
   Vote,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const features = [
   {
     icon: Sparkles,
-    title: "Personalized by ZIP code",
+    title: "Personalized by precise location",
     description:
       "See the exact representatives, districts, and issues relevant to your specific address — not a one-size-fits-all civics lesson.",
   },
   {
     icon: FileSearch,
-    title: "Issue-first, not just candidates",
+    title: "Issue-first civic education",
     description:
       "Start from the civic issues you care about — housing, safety, transit — and see who's acting on them, instead of the other way around.",
   },
@@ -37,10 +37,10 @@ const features = [
       "Backed by current officeholders and real Michigan legislation — pulled from official .gov sources wherever possible.",
   },
   {
-    icon: Users,
-    title: "Candidate comparisons",
+    icon: MapPinned,
+    title: "Address-level jurisdiction matching",
     description:
-      "Compare active candidates side-by-side on the issues that matter most to your neighborhood.",
+      "Use a full address or coordinates for exact boundary matching, while ZIP-only searches remain clearly approximate.",
   },
   {
     icon: Vote,

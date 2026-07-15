@@ -11,16 +11,18 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   const router = useRouter();
   const searchParams = useSearchParams();
   const globalZip = useZipContextStore((state) => state.zip);
+  const globalLocation = useZipContextStore((state) => state.location);
   const setGlobalZip = useZipContextStore((state) => state.setZip);
+  const setGlobalLocation = useZipContextStore((state) => state.setLocation);
   
-  const initialAddress = defaultAddress || searchParams.get("address") || globalZip || "48226";
+  const initialAddress = defaultAddress || searchParams.get("address") || globalLocation || globalZip || "";
   const [address, setAddress] = React.useState(initialAddress);
 
   React.useEffect(() => {
     // If the URL has no address but we have a saved state, restore it (handles back-button to empty URL)
-    if (!searchParams.has("address") && globalZip) {
+    if (!searchParams.has("address") && (globalLocation || globalZip)) {
       const params = new URLSearchParams(searchParams);
-      params.set("address", globalZip);
+      params.set("address", globalLocation || globalZip!);
       router.replace(`/officials-new?${params.toString()}`);
       return;
     }
@@ -31,11 +33,12 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
     } else if (currentParam) {
       setAddress(currentParam);
     }
-  }, [defaultAddress, searchParams, globalZip, router]);
+  }, [defaultAddress, searchParams, globalLocation, globalZip, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (address.trim()) {
+      setGlobalLocation(address.trim());
       // The shared dashboard context stores ZIP codes only. Keep a full street
       // address in this page's URL without replacing the dashboard ZIP.
       if (/^\d{5}(?:-\d{4})?$/.test(address.trim())) {

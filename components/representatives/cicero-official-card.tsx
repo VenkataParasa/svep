@@ -5,8 +5,6 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { representatives } from "@/data/representatives";
-import { candidates } from "@/data/candidates";
 
 interface Identifier {
   identifier_type: string;
@@ -49,20 +47,7 @@ export function CiceroOfficialCard({ official }: { official: CiceroOfficial }) {
   };
 
   const getProfileLink = () => {
-    const fName = official.first_name.toLowerCase();
-    const lName = official.last_name.toLowerCase();
-
-    const repMatch = representatives.find((r) => 
-      r.name.toLowerCase().includes(fName) && r.name.toLowerCase().includes(lName)
-    );
-    if (repMatch) return `/representatives/${repMatch.id}`;
-
-    const candMatch = candidates.find((c) => 
-      c.name.toLowerCase().includes(fName) && c.name.toLowerCase().includes(lName)
-    );
-    if (candMatch) return `/candidates/${candMatch.id}`;
-
-    return null;
+    return official.id ? `/representatives/rep-cicero-${official.id}` : null;
   };
 
   const profileLink = getProfileLink();

@@ -5,10 +5,10 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { PartyBadge } from "@/components/shared/party-badge";
-import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import { SourceList } from "@/components/shared/source-list";
 import { PositionMethodology } from "@/components/shared/position-methodology";
 import { SourceCitation } from "@/components/shared/source-citation";
+import { SocialIcon } from "@/components/shared/social-icon";
 import { LegislationCard } from "@/components/legislation/legislation-card";
 import { PublicDocumentsList } from "@/components/shared/public-documents-list";
 import { prisma as db } from "@/lib/prisma";
@@ -22,10 +22,7 @@ import type {
 import { NOT_AVAILABLE } from "@/lib/constants";
 import { getIssueById } from "@/data/issues";
 
-export async function generateStaticParams() {
-  const reps = await db.representative.findMany({ select: { id: true } });
-  return reps.map((r) => ({ id: r.id }));
-}
+export const dynamic = "force-dynamic";
 
 const levelLabel: Record<string, string> = {
   federal: "Federal",
@@ -39,6 +36,7 @@ export default async function RepresentativeProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!id.startsWith("rep-cicero-")) notFound();
 
   const representative = await db.representative.findUnique({
     where: { id },
@@ -58,6 +56,17 @@ export default async function RepresentativeProfilePage({
   });
 
   if (!representative) notFound();
+
+  const socialLinks = (() => {
+    try {
+      return JSON.parse(representative.socialLinks ?? "[]") as Array<{
+        label: string;
+        url: string;
+      }>;
+    } catch {
+      return [];
+    }
+  })();
 
   // Find metadata specifically for the biography if available
   const bioMeta = representative.metadata.find((m) => m.field === "bio");
@@ -81,7 +90,7 @@ export default async function RepresentativeProfilePage({
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs
         items={[
-          { label: "Leaders & Candidates", href: "/leaders" },
+          { label: "Officeholders", href: "/leaders" },
           { label: representative.name },
         ]}
       />
@@ -89,7 +98,11 @@ export default async function RepresentativeProfilePage({
       <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row">
         <PersonAvatar
           name={representative.name}
-          photoUrl={representative.photoUrl || undefined}
+          photoUrl={
+            representative.photoUrl
+              ? `/api/representative-photo/${representative.id}`
+              : undefined
+          }
           size="xl"
         />
         <div className="min-w-0 flex-1">
@@ -219,14 +232,31 @@ export default async function RepresentativeProfilePage({
             </span>
           )}
           {representative.contactEmail && (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
+            <a
+              href={`mailto:${representative.contactEmail}`}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary"
+            >
               <Mail className="size-4" />
               {representative.contactEmail}
-            </span>
+            </a>
           )}
+          {socialLinks.map((social) => (
+            <a
+              key={`${social.label}-${social.url}`}
+              href={social.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={social.label}
+              title={social.label}
+              className="inline-flex size-9 items-center justify-center rounded-full border border-border text-primary transition-colors hover:border-primary/40 hover:bg-primary/10"
+            >
+              <SocialIcon platform={social.label} />
+            </a>
+          ))}
           {!representative.contactWebsite &&
             !representative.contactPhone &&
-            !representative.contactEmail && (
+            !representative.contactEmail &&
+            socialLinks.length === 0 && (
               <span className="text-muted-foreground">{NOT_AVAILABLE}</span>
             )}
         </CardContent>

@@ -5,7 +5,13 @@ import { LiveIssueCategory } from "@/lib/live-issues";
 import { ExternalLink, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export function LiveIssueCard({ category }: { category: LiveIssueCategory }) {
+export function LiveIssueCard({
+  category,
+  location,
+}: {
+  category: LiveIssueCategory;
+  location?: string;
+}) {
   return (
     <Card className="flex flex-col h-full rounded-2xl border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
@@ -55,7 +61,14 @@ export function LiveIssueCard({ category }: { category: LiveIssueCategory }) {
         )}
       </CardContent>
       <CardFooter className="pt-0 pb-4 px-4 border-t border-border/40 mt-auto bg-muted/5 flex justify-center">
-        <Link href="/officials-new" className="text-xs font-medium text-primary hover:underline flex items-center gap-1.5 mt-3">
+        <Link
+          href={
+            location
+              ? `/officials-new?address=${encodeURIComponent(location)}`
+              : "/officials-new"
+          }
+          className="text-xs font-medium text-primary hover:underline flex items-center gap-1.5 mt-3"
+        >
           View your officials&apos; stances
           <ExternalLink className="w-3 h-3" />
         </Link>

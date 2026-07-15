@@ -3,8 +3,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { issues as seedIssues } from "@/data/issues";
-import { candidates as seedCandidates } from "@/data/candidates";
-import { representatives as seedRepresentatives } from "@/data/representatives";
 import type { Issue, Candidate, Representative } from "@/lib/types";
 
 function genId(prefix: string) {
@@ -35,8 +33,8 @@ export const useMockDataStore = create<MockDataState>()(
   persist(
     (set, get) => ({
       issues: seedIssues,
-      candidates: seedCandidates,
-      representatives: seedRepresentatives,
+      candidates: [],
+      representatives: [],
 
       addIssue: (issue) => {
         const created: Issue = {
@@ -73,7 +71,7 @@ export const useMockDataStore = create<MockDataState>()(
         set({ representatives: get().representatives.filter((r) => r.id !== id) }),
 
       resetToSeed: () =>
-        set({ issues: seedIssues, candidates: seedCandidates, representatives: seedRepresentatives }),
+        set({ issues: seedIssues, candidates: [], representatives: [] }),
     }),
     { name: "svep-mock-data" }
   )

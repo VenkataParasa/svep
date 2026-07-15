@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LeadersDirectory } from "@/components/leaders/leaders-directory";
 
 export const metadata: Metadata = {
-  title: "Leaders & Candidates | City of Detroit Voter Education Platform",
+  title: "Officeholders | City of Detroit Voter Education Platform",
 };
 
 export default function LeadersPage() {

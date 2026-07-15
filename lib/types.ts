@@ -203,6 +203,12 @@ export interface ZipJurisdiction {
   governmentOffice: string;
   lastUpdated: string;
   demoDataNote?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  mapTargets?: Partial<Record<
+    "city" | "county" | "council" | "stateHouse" | "stateSenate" | "congressional",
+    { label: string }
+  >>;
 }
 
 export type AuditStage = "retrieved" | "verified" | "processed" | "displayed";

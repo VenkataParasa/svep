@@ -48,7 +48,7 @@ export function SearchPageContent() {
       <Breadcrumbs items={[{ label: "Search" }]} />
       <h1 className="mt-4 text-3xl font-semibold tracking-tight">Search the Platform</h1>
       <p className="mt-1 text-muted-foreground">
-        Find issues, candidates, representatives, and legislation by keyword.
+        Find civic issues and legislation by keyword.
       </p>
 
       <div className="relative mt-6">
@@ -57,7 +57,7 @@ export function SearchPageContent() {
           autoFocus
           value={query}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search issues, candidates, representatives, bills..."
+          placeholder="Search issues and bills..."
           className="h-12 pl-9 text-base"
         />
       </div>

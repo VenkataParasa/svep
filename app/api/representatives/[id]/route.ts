@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
-import { getRepresentativeById } from "@/data/representatives";
-import { simulateLatency } from "@/lib/mock-latency";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const latencyMs = await simulateLatency();
-  const representative = getRepresentativeById(id);
+  if (!id.startsWith("rep-cicero-")) {
+    return NextResponse.json({ error: "Representative not found" }, { status: 404 });
+  }
+  const representative = await prisma.representative.findUnique({
+    where: { id },
+    include: { sources: true, issues: true, issuePositions: true },
+  });
   if (!representative) {
     return NextResponse.json({ error: "Representative not found" }, { status: 404 });
   }
-  return NextResponse.json({ data: representative, meta: { latencyMs } });
+  return NextResponse.json({ data: representative, meta: { source: "database" } });
 }

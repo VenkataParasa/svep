@@ -51,6 +51,7 @@ model Representative {
   contactWebsite   String?
   contactPhone     String?
   contactEmail     String?
+  socialLinks      String?  // JSON array of { label, url } from Cicero identifiers
   
   // NLP Outputs
   nlpBioHtml       String?
@@ -121,6 +122,27 @@ model VoterInteraction {
   details         String?  // JSON payload of the action
   timestamp       DateTime @default(now())
   syncStatus      String   @default("pending") // "pending", "synced", "synced_mock", "failed"
+}
+
+// Address-level Cicero cache. ZIP is descriptive metadata, never the key.
+// cacheKey is derived from the normalized full input or precise coordinates.
+model LocationLookup {
+  id                String   @id @default(cuid())
+  cacheKey          String   @unique
+  input             String
+  normalizedAddress String?
+  latitude          Float?
+  longitude         Float?
+  postalCode        String?
+  precision         String
+  payload           String
+  source             String   @default("Cicero")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime
+
+  @@index([expiresAt])
+  @@index([latitude, longitude])
 }
 
 model Issue {

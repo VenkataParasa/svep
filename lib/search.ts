@@ -1,6 +1,4 @@
 import { issues } from "@/data/issues";
-import { candidates } from "@/data/candidates";
-import { representatives } from "@/data/representatives";
 import { legislation } from "@/data/legislation";
 
 export type SearchResultType = "issue" | "candidate" | "representative" | "legislation";
@@ -22,22 +20,6 @@ export function buildSearchIndex(): SearchResult[] {
     href: `/issues/${i.slug}`,
   }));
 
-  const candidateResults: SearchResult[] = candidates.map((c) => ({
-    type: "candidate",
-    id: c.id,
-    title: c.name,
-    subtitle: `${c.office} — ${c.party}`,
-    href: `/candidates/${c.id}`,
-  }));
-
-  const repResults: SearchResult[] = representatives.map((r) => ({
-    type: "representative",
-    id: r.id,
-    title: r.name,
-    subtitle: r.office,
-    href: `/representatives/${r.id}`,
-  }));
-
   const legResults: SearchResult[] = legislation.map((l) => ({
     type: "legislation",
     id: l.id,
@@ -46,7 +28,7 @@ export function buildSearchIndex(): SearchResult[] {
     href: `/issues/${issues.find((i) => i.id === l.relatedIssueId)?.slug ?? ""}`,
   }));
 
-  return [...issueResults, ...candidateResults, ...repResults, ...legResults];
+  return [...issueResults, ...legResults];
 }
 
 export function searchAll(query: string): SearchResult[] {

@@ -1,73 +1,121 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+
+const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
+
+type CiceroDistrict = {
+  district_type?: string;
+  district_id?: string | number;
+};
+
+type CiceroCandidate = {
+  match_addr?: string;
+  match_streetaddr?: string;
+  match_city?: string;
+  match_region?: string;
+  match_postal?: string;
+  districts?: CiceroDistrict[];
+};
+
+type CiceroResponse = {
+  response?: {
+    errors?: Array<{ message?: string }>;
+    results?: {
+      candidates?: CiceroCandidate[];
+    };
+  };
+};
+
+function districtId(candidate: CiceroCandidate, type: string) {
+  const district = candidate.districts?.find(
+    (item) => item.district_type === type,
+  );
+  return district?.district_id?.toString() ?? null;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const address = searchParams.get('address');
+  const location = searchParams.get("address")?.trim();
 
-  if (!address) {
-    return NextResponse.json({ error: 'Missing address parameter' }, { status: 400 });
+  if (!location) {
+    return NextResponse.json(
+      { error: "Missing address parameter" },
+      { status: 400 },
+    );
   }
 
-  const apiKey = process.env.GEOCODIO_API_KEY;
-
-  if (apiKey) {
-    try {
-      const geocodioUrl = `https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(address)}&fields=cd,stateleg&api_key=${apiKey}`;
-      const response = await fetch(geocodioUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Geocodio API responded with status ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        
-        // Map Geocodio response to our standard format
-        const standardAddress = {
-          addressLine1: result.address_components.number + ' ' + result.address_components.street,
-          city: result.address_components.city,
-          state: result.address_components.state,
-          zipCode: result.address_components.zip,
-          zipPlus4: result.address_components.suffix,
-        };
-
-        const boundaries = {
-          congressionalDistrict: result.fields.congressional_districts?.[0]?.district_number?.toString() || null,
-          stateSenateDistrict: result.fields.state_legislative_districts?.senate?.[0]?.district_number?.toString() || null,
-          stateHouseDistrict: result.fields.state_legislative_districts?.house?.[0]?.district_number?.toString() || null,
-        };
-
-        return NextResponse.json({
-          address: standardAddress,
-          boundaries,
-          source: 'geocodio'
-        });
-      } else {
-        return NextResponse.json({ error: 'No results found for that address' }, { status: 404 });
-      }
-    } catch (error) {
-      console.error("Geocodio Error:", error);
-      // Fallback to mock on network error
-    }
+  const apiKey = process.env.CICERO_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Cicero is not configured on this server." },
+      { status: 503 },
+    );
   }
 
-  // MOCK FALLBACK (for local dev without API key)
-  console.log(`[Mock Geocode] Processing address: ${address}`);
-  return NextResponse.json({
-    address: {
-      addressLine1: '3051 Miller Rd',
-      city: 'Ann Arbor',
-      state: 'MI',
-      zipCode: '48103',
-      zipPlus4: '1234',
-    },
-    boundaries: {
-      congressionalDistrict: '6', // Debbie Dingell
-      stateSenateDistrict: '14',  // Sue Shink
-      stateHouseDistrict: '47',   // Carrie Rheingans
-    },
-    source: 'mock_fallback_no_api_key'
+  const ciceroParams = new URLSearchParams({
+    format: "json",
+    key: apiKey,
+    search_country: "US",
   });
+  const postalMatch = location.match(/^\d{5}(?:-\d{4})?$/);
+  ciceroParams.set(postalMatch ? "search_postal" : "search_loc", location);
+
+  try {
+    const response = await fetch(
+      `${CICERO_BASE_URL}/legislative_district?${ciceroParams.toString()}`,
+      { next: { revalidate: 60 * 60 } },
+    );
+    const data = (await response.json()) as CiceroResponse;
+
+    if (!response.ok) {
+      throw new Error(`Cicero responded with status ${response.status}`);
+    }
+
+    const apiError = data.response?.errors?.[0]?.message;
+    if (apiError) {
+      return NextResponse.json({ error: apiError }, { status: 400 });
+    }
+
+    const candidate = data.response?.results?.candidates?.[0];
+    if (!candidate) {
+      return NextResponse.json(
+        { error: "No results found for that address or ZIP code." },
+        { status: 404 },
+      );
+    }
+
+    const zipCode = candidate.match_postal?.match(/\b\d{5}\b/)?.[0];
+    if (!zipCode) {
+      return NextResponse.json(
+        { error: "Cicero did not return a ZIP code for that location." },
+        { status: 422 },
+      );
+    }
+
+    const zipPlus4 =
+      candidate.match_postal?.match(/\b\d{5}-(\d{4})\b/)?.[1] ??
+      location.match(/\b\d{5}-(\d{4})\b/)?.[1] ??
+      null;
+
+    return NextResponse.json({
+      address: {
+        addressLine1: candidate.match_streetaddr ?? candidate.match_addr ?? "",
+        city: candidate.match_city ?? "",
+        state: candidate.match_region ?? "",
+        zipCode,
+        zipPlus4,
+      },
+      boundaries: {
+        congressionalDistrict: districtId(candidate, "NATIONAL_LOWER"),
+        stateSenateDistrict: districtId(candidate, "STATE_UPPER"),
+        stateHouseDistrict: districtId(candidate, "STATE_LOWER"),
+      },
+      source: "cicero",
+    });
+  } catch (error) {
+    console.error("Cicero location lookup failed:", error);
+    return NextResponse.json(
+      { error: "The address service is temporarily unavailable." },
+      { status: 502 },
+    );
+  }
 }

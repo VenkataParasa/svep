@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { ciceroBiography, ciceroSocialLinks } from '@/lib/cicero-official';
 
 // ==========================================
 // CONFIGURATION: SYSTEM API CREDENTIALS
@@ -57,9 +58,16 @@ export class CivicIntelligencePipeline {
     last_name?: string;
     party?: string;
     photo_origin_url?: string;
+    notes?: Array<string | null>;
+    identifiers?: Array<{ identifier_type?: string; identifier_value?: string }>;
+    addresses?: Array<{ phone_1?: string }>;
+    email_addresses?: string[];
+    urls?: string[];
     office?: { title?: string; district?: { district_type?: string } };
   }): Promise<string | undefined> {
     const photoUrl = official.photo_origin_url?.trim();
+    const biography = ciceroBiography(official.notes);
+    const socialLinks = ciceroSocialLinks(official.identifiers);
     const name = `${official.first_name || ""} ${official.last_name || ""}`.trim();
     if (!name) return undefined;
 
@@ -82,6 +90,11 @@ export class CivicIntelligencePipeline {
           party: official.party || "Nonpartisan",
           jurisdiction: this.address,
           ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
+          ...(biography ? { bio: biography } : {}),
+          socialLinks: JSON.stringify(socialLinks),
+          contactWebsite: official.urls?.[0] ?? null,
+          contactPhone: official.addresses?.[0]?.phone_1 ?? null,
+          contactEmail: official.email_addresses?.[0] ?? null,
           confidence: "verified",
         },
         create: {
@@ -94,7 +107,11 @@ export class CivicIntelligencePipeline {
           photoUrl: photoUrl || "",
           isDemoPhoto: !photoUrl,
           confidence: "verified",
-          bio: `Data retrieved from the Cicero API for ${office}.`,
+          bio: biography ?? `Data retrieved from the Cicero API for ${office}.`,
+          socialLinks: JSON.stringify(socialLinks),
+          contactWebsite: official.urls?.[0] ?? null,
+          contactPhone: official.addresses?.[0]?.phone_1 ?? null,
+          contactEmail: official.email_addresses?.[0] ?? null,
         },
       });
       return representativeId;

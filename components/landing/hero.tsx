@@ -21,7 +21,10 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Badge variant="outline" className="mb-5 border-primary/30 bg-primary/5 text-primary">
+            <Badge
+              variant="outline"
+              className="mb-5 border-primary/30 bg-primary/5 text-primary"
+            >
               City of Detroit · Department of Elections
             </Badge>
           </motion.div>
@@ -40,9 +43,10 @@ export function Hero() {
             transition={{ duration: 0.55, delay: 0.12 }}
             className="mx-auto mt-5 max-w-2xl text-balance text-lg text-muted-foreground"
           >
-            Enter your full address or ZIP code to see your current officeholders, active candidates,
-            and the civic issues affecting your area — every summary is built from
-            official government records and links back to its sources.
+            Enter your full address or ZIP code to see your current
+            officeholders, legislative jurisdictions, and civic issues - every
+            summary is built from official government records and links back to
+            its sources.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -50,10 +54,12 @@ export function Hero() {
             transition={{ duration: 0.55, delay: 0.2 }}
             className="mx-auto mt-9 max-w-xl"
           >
-            <ZipSearchForm />
+            <ZipSearchForm showGeolocation />
             <p className="mt-3 text-xs text-muted-foreground">
-              This demonstration covers 37 Detroit-area ZIP codes (48201&ndash;48243).
-              Street-address-level routing is planned for the production system.
+              Enter a ZIP code for an approximate match, or a full street
+              address or ZIP+4 for more precise jurisdiction routing through
+              Cicero. Device location is optional and requested only after you
+              select “Use my location.”
             </p>
           </motion.div>
         </div>

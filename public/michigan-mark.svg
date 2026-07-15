@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-labelledby="title">
+  <title id="title">Michigan geographic identifier</title>
+  <g fill="#1f5f99">
+    <path d="M83 18 75 7l-8 3-7 13 5 15 9 8 5 16 11 7 8-5-2-15 7-10-4-16-8-8z"/>
+    <path d="m45 20-14 3-13 12 5 9 17 1 13-7 9-11-5-9z"/>
+    <path d="m93 73-12 7-4 16 8 17 14-2 9-15-3-16z"/>
+    <path d="m116 61-8 9 4 14 12 4 9-13-5-12z"/>
+  </g>
+  <text x="80" y="116" text-anchor="middle" fill="#1f5f99" font-family="Arial, sans-serif" font-size="14" font-weight="700">MICHIGAN</text>
+</svg>

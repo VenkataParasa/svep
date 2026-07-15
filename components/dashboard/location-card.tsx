@@ -1,5 +1,6 @@
-import { Building2, Landmark, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { JurisdictionMapDialog } from "@/components/dashboard/jurisdiction-map-dialog";
 import type { ZipJurisdiction } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -16,13 +17,26 @@ export function LocationCard({
   //   { label: "State Senate District", value: jurisdiction.stateSenateDistrict, confidence: jurisdiction.stateSenateConfidence },
   //   { label: "Congressional District", value: jurisdiction.congressionalDistrict, confidence: jurisdiction.congressionalConfidence },
   // ];
-  const rows: { label: string; value: string; note?: string }[] = [
-    { label: "City", value: jurisdiction.city },
-    { label: "County", value: jurisdiction.county },
-    { label: "Council District", value: jurisdiction.councilDistrict },
-    { label: "State House District", value: jurisdiction.stateHouseDistrict },
-    { label: "State Senate District", value: jurisdiction.stateSenateDistrict },
+  const rows = [
+    { key: "city" as const, label: "City", value: jurisdiction.city },
+    { key: "county" as const, label: "County", value: jurisdiction.county },
     {
+      key: "council" as const,
+      label: "Council District",
+      value: jurisdiction.councilDistrict,
+    },
+    {
+      key: "stateHouse" as const,
+      label: "State House District",
+      value: jurisdiction.stateHouseDistrict,
+    },
+    {
+      key: "stateSenate" as const,
+      label: "State Senate District",
+      value: jurisdiction.stateSenateDistrict,
+    },
+    {
+      key: "congressional" as const,
       label: "Congressional District",
       value: jurisdiction.congressionalDistrict,
     },
@@ -40,22 +54,11 @@ export function LocationCard({
         <div className="rounded-xl bg-accent/40 p-3">
           <div className="text-2xl font-semibold">{jurisdiction.zip}</div>
           <div className="text-sm text-muted-foreground">
-            {jurisdiction.neighborhood}, {jurisdiction.city}, MI
+            {jurisdiction.neighborhood} · {jurisdiction.city} ·{" "}
+            {jurisdiction.county}
           </div>
         </div>
 
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-border bg-muted mt-2">
-          <div className="absolute left-2 top-2 z-10 rounded-md border bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">
-            City Council / local district boundary
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/jurisdiction-map?zip=${jurisdiction.zip}`}
-            alt={`Map of Jurisdiction for ${jurisdiction.zip}`}
-            className="h-full w-full object-cover transition-opacity duration-300"
-            loading="lazy"
-          />
-        </div>
         <dl className="space-y-2.5">
           {rows.map((row, index) => (
             <div
@@ -65,7 +68,12 @@ export function LocationCard({
               }`}
             >
               <dt className="flex items-center gap-1.5 text-muted-foreground">
-                <Landmark className="size-3.5 shrink-0" />
+                <JurisdictionMapDialog
+                  label={jurisdiction.mapTargets?.[row.key]?.label ?? row.value}
+                  latitude={jurisdiction.latitude}
+                  longitude={jurisdiction.longitude}
+                  kind={row.key}
+                />
                 {row.label}
               </dt>
               <dd className="flex flex-col items-end gap-1 text-right font-medium">
@@ -80,15 +88,6 @@ export function LocationCard({
             </div>
           ))}
         </dl>
-        <div className="flex items-start justify-between gap-3 border-t border-border pt-3 text-sm">
-          <dt className="flex items-center gap-1.5 text-muted-foreground">
-            <Building2 className="size-3.5 shrink-0" />
-            Government Office
-          </dt>
-          <dd className="text-right font-medium">
-            {jurisdiction.governmentOffice}
-          </dd>
-        </div>
         <p className="text-right text-xs text-muted-foreground">
           Last updated {formatDate(jurisdiction.lastUpdated)}
         </p>

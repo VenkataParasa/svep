@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma as db } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
+import { ciceroBiography, ciceroSocialLinks } from '@/lib/cicero-official';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const address = body.address || 'Detroit, MI'; // Default target area
+    const address = typeof body.address === 'string' ? body.address.trim() : '';
+    if (!address) {
+      return NextResponse.json({ error: 'A full address, ZIP, or ZIP+4 is required.' }, { status: 400 });
+    }
 
     const apiKey = process.env.CICERO_API_KEY;
     let candidatesList = [];
@@ -19,26 +23,7 @@ export async function POST(request: Request) {
       const jsonData = await response.json();
       candidatesList = jsonData.response?.results?.candidates || [];
     } else {
-      // Mock Fallback Data matching Cicero's structure
-      console.log("[Mock Sync] Simulating Cicero API fetch for:", address);
-      candidatesList = [
-        {
-          officials: [
-            {
-              first_name: "Mike",
-              last_name: "Duggan",
-              party: "Democratic Party",
-              office: {
-                title: "Mayor of Detroit",
-                district: { district_type: "LOCAL" },
-                chamber: { election_frequency: "4 years" }
-              },
-              addresses: [{ phone_1: "313-224-3400" }],
-              urls: ["https://detroitmi.gov/government/mayors-office"]
-            }
-          ]
-        }
-      ];
+      return NextResponse.json({ error: 'Cicero API is not configured.' }, { status: 503 });
     }
 
     if (!candidatesList || candidatesList.length === 0) {
@@ -85,6 +70,8 @@ export async function POST(request: Request) {
       const contactPhone = official.addresses?.[0]?.phone_1 || null;
       const contactWebsite = official.urls?.[0] || null;
       const photoUrl = official.photo_origin_url || "";
+      const biography = ciceroBiography(official.notes);
+      const socialLinks = ciceroSocialLinks(official.identifiers);
 
       // Upsert Representative
       await db.representative.upsert({
@@ -96,6 +83,9 @@ export async function POST(request: Request) {
           contactPhone: contactPhone,
           contactWebsite: contactWebsite,
           ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
+          ...(biography ? { bio: biography } : {}),
+          socialLinks: JSON.stringify(socialLinks),
+          contactEmail: official.email_addresses?.[0] || null,
           confidence: "verified",
         },
         create: {
@@ -110,7 +100,9 @@ export async function POST(request: Request) {
           confidence: "verified",
           isDemoPhoto: !photoUrl,
           photoUrl,
-          bio: `Data automatically synced from Cicero API for ${officeTitle}.`
+          bio: biography ?? `Data automatically synced from Cicero API for ${officeTitle}.`,
+          socialLinks: JSON.stringify(socialLinks),
+          contactEmail: official.email_addresses?.[0] || null,
         }
       });
 

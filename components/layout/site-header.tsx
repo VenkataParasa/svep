@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home" },
+  { href: "/jurisdictions", label: "Jurisdictions" },
   { href: "/dashboard", label: "Civic Dashboard" },
   { href: "/officials-new", label: "Elected Officials" },
   { href: "/issues", label: "Civic Issues" },
@@ -28,6 +29,7 @@ const navItems = [
 export function SiteHeader() {
   const pathname = usePathname();
   const zip = useZipContextStore((s) => s.zip);
+  const location = useZipContextStore((s) => s.location);
   const [searchOpen, setSearchOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -42,10 +44,16 @@ export function SiteHeader() {
   }, []);
 
   const withLocation = (href: string) => {
-    if (!zip) return href;
-    if (href === "/dashboard") return `${href}?zip=${encodeURIComponent(zip)}`;
+    const savedLocation = location || zip;
+    if (!savedLocation) return href;
+    if (href === "/jurisdictions")
+      return `${href}?location=${encodeURIComponent(savedLocation)}`;
+    if (href === "/dashboard" && zip)
+      return `${href}?zip=${encodeURIComponent(zip)}`;
     if (href === "/officials-new")
-      return `${href}?address=${encodeURIComponent(zip)}`;
+      return `${href}?address=${encodeURIComponent(savedLocation)}`;
+    if (href === "/issues")
+      return `${href}?location=${encodeURIComponent(savedLocation)}`;
     return href;
   };
 

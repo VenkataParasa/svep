@@ -53,19 +53,14 @@ export default async function OfficialsPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  let zipParam = params.zip as string | undefined;
+  const zipParam = params.zip as string | undefined;
   const categoryParam = (params.category as string) || "all";
-  
-  // Show a local default when the page is opened without a ZIP search.
-  if (!zipParam) {
-    zipParam = "48103-3194";
-  }
   
   let officials: CiceroOfficial[] = [];
   let error: string | null = null;
   
   try {
-    officials = await getCiceroOfficials(zipParam);
+    if (zipParam) officials = await getCiceroOfficials(zipParam);
   } catch (e: unknown) {
     if (e instanceof Error) {
       error = e.message;
@@ -127,7 +122,8 @@ export default async function OfficialsPage({
             <nav className="flex flex-col gap-2 text-sm font-medium">
               {categories.map(cat => {
                 const isActive = categoryParam === cat.id;
-                const linkParams = new URLSearchParams({ zip: zipParam });
+                const linkParams = new URLSearchParams();
+                if (zipParam) linkParams.set("zip", zipParam);
                 if (cat.id !== "all") linkParams.set("category", cat.id);
                 const href = `/officials?${linkParams.toString()}`;
                 return (

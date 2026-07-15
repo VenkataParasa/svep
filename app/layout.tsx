@@ -15,7 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "City of Detroit | Voter Education Platform",
   description:
-    "An official voter education service demonstration for the City of Detroit Department of Elections — personalized, source-transparent civic information on the issues, officeholders, and candidates that shape your neighborhood.",
+    "An official voter education service demonstration for the City of Detroit Department of Elections — personalized, source-transparent civic information on issues, jurisdictions, and current officeholders.",
 };
 
 export default function RootLayout({

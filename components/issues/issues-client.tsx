@@ -31,7 +31,7 @@ export function IssuesClient({ initialIssues }: { initialIssues: Record<string, 
           <h1 className="text-3xl font-semibold tracking-tight">Civic Issues</h1>
           <p className="mt-1 max-w-2xl text-muted-foreground">
             Explore the issues shaping Detroit — each one links real legislation, representatives,
-            and candidates back to official sources.
+            and officeholders back to official sources.
           </p>
         </div>
         <div className="relative w-full max-w-xs">
