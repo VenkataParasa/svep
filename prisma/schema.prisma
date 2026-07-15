@@ -51,6 +51,7 @@ model Representative {
   contactWebsite   String?
   contactPhone     String?
   contactEmail     String?
+  socialLinks      String?  // JSON array of { label, url } from Cicero identifiers
   
   // NLP Outputs
   nlpBioHtml       String?

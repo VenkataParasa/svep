@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma as db } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
+import { ciceroBiography, ciceroSocialLinks } from '@/lib/cicero-official';
 
 export async function POST(request: Request) {
   try {
@@ -69,6 +70,8 @@ export async function POST(request: Request) {
       const contactPhone = official.addresses?.[0]?.phone_1 || null;
       const contactWebsite = official.urls?.[0] || null;
       const photoUrl = official.photo_origin_url || "";
+      const biography = ciceroBiography(official.notes);
+      const socialLinks = ciceroSocialLinks(official.identifiers);
 
       // Upsert Representative
       await db.representative.upsert({
@@ -80,6 +83,9 @@ export async function POST(request: Request) {
           contactPhone: contactPhone,
           contactWebsite: contactWebsite,
           ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
+          ...(biography ? { bio: biography } : {}),
+          socialLinks: JSON.stringify(socialLinks),
+          contactEmail: official.email_addresses?.[0] || null,
           confidence: "verified",
         },
         create: {
@@ -94,7 +100,9 @@ export async function POST(request: Request) {
           confidence: "verified",
           isDemoPhoto: !photoUrl,
           photoUrl,
-          bio: `Data automatically synced from Cicero API for ${officeTitle}.`
+          bio: biography ?? `Data automatically synced from Cicero API for ${officeTitle}.`,
+          socialLinks: JSON.stringify(socialLinks),
+          contactEmail: official.email_addresses?.[0] || null,
         }
       });
 

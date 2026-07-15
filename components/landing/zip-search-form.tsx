@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MapPin, Search } from "lucide-react";
+import { LoaderCircle, LocateFixed, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,14 +29,17 @@ type FormValues = z.infer<typeof schema>;
 export function ZipSearchForm({
   className,
   destination = "jurisdictions",
+  showGeolocation = false,
 }: {
   className?: string;
   destination?: "jurisdictions" | "dashboard";
+  showGeolocation?: boolean;
 }) {
   const router = useRouter();
   const setZip = useZipContextStore((s) => s.setZip);
   const storedLocation = useZipContextStore((s) => s.location);
   const setLocation = useZipContextStore((s) => s.setLocation);
+  const [locating, setLocating] = React.useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -90,6 +93,44 @@ export function ZipSearchForm({
     router.push(`/dashboard?zip=${resolvedZip}`);
   }
 
+  function useCurrentLocation() {
+    if (!("geolocation" in navigator)) {
+      form.setError("zip", {
+        message: "Location detection is not supported by this browser.",
+      });
+      return;
+    }
+
+    setLocating(true);
+    form.clearErrors("zip");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocating(false);
+        const params = new URLSearchParams({
+          lat: coords.latitude.toFixed(6),
+          lon: coords.longitude.toFixed(6),
+        });
+        router.push(`/jurisdictions?${params.toString()}`);
+      },
+      (error) => {
+        setLocating(false);
+        form.setError("zip", {
+          message:
+            error.code === error.PERMISSION_DENIED
+              ? "Location permission was denied. Enter your address or ZIP code instead."
+              : error.code === error.TIMEOUT
+                ? "Location detection timed out. Try again or enter your address."
+                : "Your location could not be detected. Enter your address or ZIP code instead.",
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
+  }
+
   return (
     <Form {...form}>
       <form
@@ -129,6 +170,23 @@ export function ZipSearchForm({
             Find My Civic Information
           </Button>
         </div>
+        {showGeolocation && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="mt-3 h-11 w-full gap-2 rounded-xl text-sm"
+            onClick={useCurrentLocation}
+            disabled={locating || form.formState.isSubmitting}
+          >
+            {locating ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <LocateFixed className="size-4" />
+            )}
+            {locating ? "Locating…" : "Use my current device location"}
+          </Button>
+        )}
       </form>
     </Form>
   );

@@ -33,6 +33,7 @@ interface CurrentOfficial {
 
 type DynamicDistrict = {
   type: string;
+  districtId: string;
   label: string;
   officials: Array<{
     id: string | null;
@@ -50,6 +51,8 @@ type DynamicLocation = {
     county: string;
     state: string;
     postalCode: string;
+    latitude: number | null;
+    longitude: number | null;
   };
   districts: DynamicDistrict[];
 };
@@ -71,6 +74,14 @@ function partyFromCicero(value: string): Party {
 
 function districtLabel(districts: DynamicDistrict[], type: string) {
   return districts.find((district) => district.type === type)?.label ?? "Not returned by Cicero";
+}
+
+function districtTarget(
+  districts: DynamicDistrict[],
+  predicate: (district: DynamicDistrict) => boolean,
+) {
+  const district = districts.find(predicate);
+  return district ? { label: district.label } : undefined;
 }
 
 function getOfficeRank(level: GovLevel, office: string): number {
@@ -202,7 +213,12 @@ export function DashboardContent() {
           city: location.match.city || "Location returned by Cicero",
           county: location.match.county || "Not returned by Cicero",
           neighborhood: location.match.formattedAddress,
-          councilDistrict: districtLabel(location.districts, "LOCAL"),
+          councilDistrict:
+            location.districts.find(
+              (district) =>
+                district.type === "LOCAL" &&
+                district.districtId.toLowerCase() !== "at large",
+            )?.label ?? districtLabel(location.districts, "LOCAL"),
           councilDistrictConfidence: "verified",
           congressionalDistrict: districtLabel(location.districts, "NATIONAL_LOWER"),
           congressionalConfidence: "verified",
@@ -214,6 +230,36 @@ export function DashboardContent() {
           topIssueIds: [],
           governmentOffice: "Cicero legislative district service",
           lastUpdated: new Date().toISOString(),
+          latitude: location.match.latitude,
+          longitude: location.match.longitude,
+          mapTargets: {
+            city: districtTarget(
+              location.districts,
+              (district) =>
+                district.type === "LOCAL_EXEC" ||
+                (district.type === "LOCAL" &&
+                  district.districtId.toLowerCase() === "at large"),
+            ),
+            county: { label: location.match.county || "County" },
+            council: districtTarget(
+              location.districts,
+              (district) =>
+                district.type === "LOCAL" &&
+                district.districtId.toLowerCase() !== "at large",
+            ),
+            stateHouse: districtTarget(
+              location.districts,
+              (district) => district.type === "STATE_LOWER",
+            ),
+            stateSenate: districtTarget(
+              location.districts,
+              (district) => district.type === "STATE_UPPER",
+            ),
+            congressional: districtTarget(
+              location.districts,
+              (district) => district.type === "NATIONAL_LOWER",
+            ),
+          },
         });
       })
       .catch((error) => {

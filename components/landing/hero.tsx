@@ -54,11 +54,12 @@ export function Hero() {
             transition={{ duration: 0.55, delay: 0.2 }}
             className="mx-auto mt-9 max-w-xl"
           >
-            <ZipSearchForm />
+            <ZipSearchForm showGeolocation />
             <p className="mt-3 text-xs text-muted-foreground">
               Enter a ZIP code for an approximate match, or a full street
               address or ZIP+4 for more precise jurisdiction routing through
-              Cicero.
+              Cicero. Device location is optional and requested only after you
+              select “Use my location.”
             </p>
           </motion.div>
         </div>

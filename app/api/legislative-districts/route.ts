@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { ciceroBiography, ciceroSocialLinks } from "@/lib/cicero-official";
+import {
+  findWikipediaPortrait,
+  wikipediaSourceId,
+  type WikipediaPhoto,
+} from "@/lib/wikipedia-photo";
 
 const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
 
@@ -40,6 +46,13 @@ type CiceroOfficial = {
   party?: string;
   photo_origin_url?: string;
   urls?: string[];
+  notes?: Array<string | null>;
+  identifiers?: Array<{
+    identifier_type?: string;
+    identifier_value?: string;
+  }>;
+  addresses?: Array<{ phone_1?: string }>;
+  email_addresses?: string[];
   office?: {
     title?: string;
     chamber?: { is_appointed?: boolean; election_frequency?: string };
@@ -223,23 +236,85 @@ export async function GET(request: NextRequest) {
       ]),
     );
 
+    const stateOfficialNames = [
+      ...new Set(
+        electedOfficials
+          .filter((official) =>
+            official.office?.district?.district_type?.startsWith("STATE"),
+          )
+          .map((official) =>
+            `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim(),
+          )
+          .filter(Boolean),
+      ),
+    ].filter((name) => {
+      const matchingOfficial = electedOfficials.find(
+        (official) =>
+          `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim() === name,
+      );
+      const id = matchingOfficial ? representativeId(matchingOfficial) : null;
+      return !(
+        id && storedPhotoById.get(id)?.includes("upload.wikimedia.org")
+      );
+    });
+    const wikipediaPhotos = new Map<string, WikipediaPhoto>();
+    for (const name of stateOfficialNames) {
+      try {
+        const portrait = await findWikipediaPortrait(name);
+        if (portrait) wikipediaPhotos.set(name, portrait);
+      } catch {
+        // A portrait lookup must never prevent Cicero jurisdiction results.
+      }
+    }
+
     const persistedOfficials = electedOfficials.map((official) => {
       const id = representativeId(official);
+      const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
+      const wikipediaPhoto = wikipediaPhotos.get(name) ?? null;
       const ciceroPhotoUrl = official.photo_origin_url?.trim() || null;
       return {
         official,
         id,
-        photoUrl: ciceroPhotoUrl || (id ? storedPhotoById.get(id) : null) || null,
+        wikipediaPhoto,
+        photoUrl:
+          wikipediaPhoto?.imageUrl ||
+          (id ? storedPhotoById.get(id) : null) ||
+          ciceroPhotoUrl ||
+          null,
       };
     });
+
+    await Promise.allSettled(
+      [...wikipediaPhotos.entries()].map(([name, portrait]) =>
+        prisma.source.upsert({
+          where: { id: wikipediaSourceId(name) },
+          update: {
+            name: `Wikipedia — ${portrait.pageTitle}`,
+            url: portrait.pageUrl,
+            lastUpdated: new Date(),
+          },
+          create: {
+            id: wikipediaSourceId(name),
+            name: `Wikipedia — ${portrait.pageTitle}`,
+            type: "nonprofit",
+            url: portrait.pageUrl,
+            verificationStatus: "verified",
+            notes: "Source page for the Wikimedia-hosted representative portrait.",
+          },
+        }),
+      ),
+    );
 
     // Persist current Cicero records without allowing a database failure to
     // prevent the live jurisdiction result from being displayed.
     await Promise.allSettled(
-      persistedOfficials.flatMap(({ official, id, photoUrl }) => {
+      persistedOfficials.flatMap(({ official, id, photoUrl, wikipediaPhoto }) => {
         if (!id) return [];
         const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
         const district = official.office?.district;
+        const biography = ciceroBiography(official.notes);
+        const socialLinks = ciceroSocialLinks(official.identifiers);
+        const sourceId = wikipediaPhoto ? wikipediaSourceId(name) : null;
         return [
           prisma.representative.upsert({
             where: { id },
@@ -252,7 +327,12 @@ export async function GET(request: NextRequest) {
               district: district?.district_id ?? null,
               ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
               contactWebsite: official.urls?.[0] ?? null,
+              contactPhone: official.addresses?.[0]?.phone_1 ?? null,
+              contactEmail: official.email_addresses?.[0] ?? null,
+              ...(biography ? { bio: biography } : {}),
+              socialLinks: JSON.stringify(socialLinks),
               confidence: "verified",
+              ...(sourceId ? { sources: { connect: { id: sourceId } } } : {}),
             },
             create: {
               id,
@@ -265,8 +345,14 @@ export async function GET(request: NextRequest) {
               photoUrl,
               isDemoPhoto: !photoUrl,
               contactWebsite: official.urls?.[0] ?? null,
+              contactPhone: official.addresses?.[0]?.phone_1 ?? null,
+              contactEmail: official.email_addresses?.[0] ?? null,
               confidence: "verified",
-              bio: `Current officeholder data retrieved from the Cicero API for ${official.office?.title ?? "this office"}.`,
+              bio:
+                biography ??
+                `Current officeholder data retrieved from the Cicero API for ${official.office?.title ?? "this office"}.`,
+              socialLinks: JSON.stringify(socialLinks),
+              ...(sourceId ? { sources: { connect: { id: sourceId } } } : {}),
             },
           }),
         ];
