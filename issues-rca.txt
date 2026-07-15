@@ -1,0 +1,85 @@
+Root Cause Analysis (RCA): /issues Endpoint 500 Crash on Vercel
+
+Summary of the Issue:
+When accessing the `/issues` route on the Vercel deployment (https://svep.symphonize.net/issues), the page crashes and returns a 500 Internal Server Error, whereas it works perfectly locally.
+
+Root Cause:
+The crash is the result of a cascade of three specific conditions in the production environment:
+
+1. Missing Environment Variable on Vercel:
+The `getLiveIssues()` function in `lib/live-issues.ts` relies on the `OPENSTATES_API_KEY` environment variable to fetch real-time legislative data. When I inspected the Vercel environment variables using the CLI (`vercel env ls`), only `DATABASE_URL` is set. Because `OPENSTATES_API_KEY` is missing in production, the application skips the API fetch.
+
+2. Fallback to Local SQLite Database:
+When the API fetch is skipped (or fails), the code is designed to fall back to the local database to serve demo data. It executes `await db.legislation.findMany(...)` using Prisma.
+
+3. SQLite Read-Only Filesystem Error:
+Vercel serverless functions execute in an ephemeral, read-only environment. SQLite requires write access (even for reads, to create lock files). To bypass this, `lib/prisma.ts` has custom logic that tries to copy `prisma/dev.db` to `/tmp/dev.db` (which is writable). 
+However, Next.js isolates different routes into separate Serverless Functions. While the `next.config.ts` attempts to include the database file using `outputFileTracingIncludes: { "/**": ["./prisma/dev.db"] }`, this glob pattern often fails to package the database file into dynamically rendered routes like `/issues` (which has `export const dynamic = "force-dynamic"`). 
+Because the database file is not bundled into the `/issues` lambda, `lib/prisma.ts` fails to copy it to `/tmp/dev.db`. Prisma then falls back to trying to open `./dev.db` in the read-only root directory, which immediately triggers a fatal `PrismaClientInitializationError` (500 Internal Server Error).
+
+Resolution Recommendations:
+1. Add the API Key: Add `OPENSTATES_API_KEY` to the Vercel project's environment variables. This will prevent the application from hitting the SQLite fallback entirely.
+2. Fix Output Tracing: If you need the SQLite fallback to work on Vercel, update `next.config.ts` to explicitly include the route: 
+   ```typescript
+   outputFileTracingIncludes: {
+     "/issues": ["./prisma/dev.db"],
+     "/(site)/issues": ["./prisma/dev.db"],
+     "/**": ["./prisma/dev.db"]
+   }
+   ```
+3. Use a Remote Database: For production deployments on Vercel, it is highly recommended to migrate from SQLite to a remote PostgreSQL database (like Vercel Postgres or Supabase) to completely avoid serverless filesystem limitations.
+
+
+---
+Root Cause Analysis (RCA): Vercel Prisma "must start with postgresql://" Error
+
+Summary of the Issue:
+When deploying to Vercel, the application crashed at runtime with a `PrismaClientInitializationError`: `Error validating datasource db: the URL must start with the protocol postgresql:// or postgres://`.
+
+Root Cause:
+The crash was caused by a combination of environment variable corruption and build caching:
+1. The Neon Vercel Integration bot was aggressively syncing and intermittently wiping out manually added environment variables.
+2. When automated scripts (PowerShell) were used to inject the variables into the Vercel CLI, hidden quotation marks or newline characters were passed into the string. Prisma read the variable as literally starting with a quote (`"postgresql://...`), which it rejected as an invalid protocol.
+3. Even after fixing the variables in the Vercel Dashboard (where they correctly showed up as 'Sensitive' with a padlock), clicking "Redeploy" failed because Vercel used its Build Cache, skipping the step where Prisma rebuilds its client with the clean variables.
+
+Resolution:
+1. Uninstalled the automatic Neon Integration from the Vercel dashboard to prevent variables from being wiped.
+2. Deleted the corrupted environment variables and manually pasted the clean connection strings into the Vercel UI.
+3. Triggered a Redeployment with the "Use existing build cache" checkbox explicitly UNCHECKED, forcing Vercel to cleanly inject the new variables into the Prisma engine.
+
+---
+Root Cause Analysis (RCA): Azure Container App Managed Identity Secret Fetching Failure
+
+Summary of the Issue:
+During `terraform apply`, the Container App (`svep-web`) failed to provision with the error: `unable to fetch secret 'database-url' using Managed identity`.
+
+Root Cause:
+The Terraform script `compute.tf` was using the legacy `azurerm_key_vault_access_policy` to grant the Managed Identity permission to read secrets. Despite adding a 120-second delay for Azure AD propagation, the error persisted. 
+The root cause is that Azure has increasingly shifted to enforcing Role-Based Access Control (RBAC) on newly created Key Vaults by default. When RBAC is active, Azure completely ignores legacy Access Policies. The Managed Identity had an access policy, but no RBAC role, so Azure denied the secret fetch.
+
+Resolution:
+Bypassed the legacy Access Policy model by manually executing an Azure CLI command to explicitly assign the `Key Vault Secrets User` role to the Managed Identity's Principal ID:
+`az role assignment create --role "Key Vault Secrets User" --assignee-object-id <ca-identity-principal-id> --assignee-principal-type ServicePrincipal --scope <key-vault-id>`
+Following this explicit RBAC assignment, the Container App was able to instantly fetch the secrets and successfully deploy.
+
+---
+Root Cause Analysis (RCA): Azure Container App Environment Destruction Loop & State Desync
+
+Summary of the Issue:
+During a `terraform apply`, the Azure Container App Environment (`svep-cae`) triggered a massive 26-minute destruction cycle, followed by an error: `Provider produced inconsistent result after apply... Root object was present, but now absent.` Upon the next apply, Azure rejected the creation, stating the resource already existed. After manually importing the environment to fix the state, the very next `terraform apply` immediately triggered *another* 26-minute destruction cycle.
+
+Root Cause:
+This issue is caused by two compounding bugs in the AzureRM Terraform provider and Azure APIs:
+1. **The Inconsistent State Bug**: Deleting a Container App Environment in Azure takes an exceptionally long time. Because the destruction took 26 minutes, the Terraform provider's internal tracker desynced and dropped the environment from the local `terraform.tfstate` file, despite it still existing (or being in a partial state) on Azure servers.
+2. **The Import Casing Drift Bug**: To fix the missing state, the environment was manually imported using `terraform import`. However, Azure's REST API returned the Resource IDs (such as the `infrastructure_subnet_id`) with slightly different capitalization than what was strictly defined in the `.tf` files (e.g., `resourcegroups` instead of `resourceGroups`). Because Terraform is case-sensitive, it flagged this as a "configuration drift." Since the Subnet ID is a `ForceNew` property, Terraform decided it had no choice but to forcefully destroy and recreate the entire environment to make it match the exact casing of the `.tf` script.
+
+Resolution:
+Once the deletion command is sent, it cannot be safely cancelled without permanently corrupting the Azure resource group. The only resolution is to allow Terraform to finish the agonizing 26-minute destruction and recreation cycle. Because Terraform natively creates the environment this time (rather than importing it from Azure's loosely-cased API), the state file perfectly aligns with Azure, permanently preventing any future drift or destruction loops.
+
+---
+Appendix: Vercel CLI Commands Used for Investigation
+----------------------------------------------------
+- `vercel logs --environment production --limit 50`: Attempted to fetch the latest production logs.
+- `vercel logs https://svp-7tz0rrrou-symphonize-poc-projects.vercel.app --limit 100`: Fetched logs for the specific deployment URL.
+- `vercel logs --request-id <ID>`: Queried logs for the exact failing request using the X-Vercel-Id header.
+- `vercel env ls`: Listed environment variables on Vercel to discover that OPENSTATES_API_KEY and CICERO_API_KEY were missing.

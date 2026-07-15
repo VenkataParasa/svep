@@ -1,0 +1,50 @@
+Plan for Addressing Specific Issue Requirements
+===============================================
+
+Below is a detailed plan on how we can address each of your specific requirements regarding how issues are presented in the platform. Fortunately, our database schema (in `prisma/schema.prisma`) is already well-positioned to support most of these out-of-the-box, with a few minor extensions.
+
+1. How the issue is handled by local government
+-----------------------------------------------
+**Current State:** The `Issue` model currently has `summary` and `plainLanguageSummary` fields. 
+**Implementation Plan:** 
+- We will add a new text field to the `Issue` model specifically for this context, such as `localHandlingStrategy` (String). 
+- Alternatively, we can use the existing `plainLanguageSummary` to specifically focus on the "how local government handles this" narrative.
+- In the UI (`app/(site)/issues/[slug]/page.tsx`), we will create a dedicated section titled "Local Government Approach" to surface this text prominently.
+
+2. Which local agencies and elected officials have authority over it
+--------------------------------------------------------------------
+**Current State:** The schema already perfectly supports this! The `Issue` model has many-to-many relations to `Representative` (elected officials) and a one-to-many relation to `RelatedDepartment` (local agencies).
+**Implementation Plan:** 
+- Update the Prisma query in the Issue detail page to eagerly load `include: { representatives: true, departments: true }`.
+- Build a UI component (e.g., "Key Stakeholders") that lists the related departments with links to their websites, alongside a grid of the elected officials who have jurisdiction over the issue.
+
+3. What actions, laws, budgets, or programs influence it
+--------------------------------------------------------
+**Current State:** We currently have a `Legislation` model related to `Issue`, which covers the "laws" and "actions" aspect. We also have `PublicDocument` which can link to budget PDFs.
+**Implementation Plan:** 
+- **Laws/Actions:** Continue using the `Legislation` relation to display active bills and historical laws.
+- **Budgets/Programs:** We will extend the schema by creating a `Program` model (e.g., `id`, `name`, `description`, `budgetAllocation`) related to `Issue`, OR simply add a `keyPrograms` (JSON) field to the `Issue` model to list major initiatives.
+- In the UI, we will create an "Influencing Factors" tab or section that lists associated Legislation, Programs, and Budget documents.
+
+4. How those decisions affect a resident’s neighborhood or daily life
+---------------------------------------------------------------------
+**Current State:** The `Issue` model already contains a `communityImpact` field, as well as an `nlpCommunityImpactHtml` field for plain-language transformations!
+**Implementation Plan:**
+- We will create a visually distinct "Resident Impact" card on the issue detail page.
+- This section will directly render the `nlpCommunityImpactHtml` (or fallback to `communityImpact`) to explain in plain, jargon-free language exactly how the issue translates to their daily life and neighborhood.
+
+5. Ensuring Data Authenticity and Source Linking
+------------------------------------------------
+**Current State:** Trust and transparency are paramount. The platform already includes a highly sophisticated `Source` and `FieldMetadata` schema specifically designed for this purpose. 
+**Implementation Plan:**
+- **Source Linking:** We will utilize the existing many-to-many `sources` relation on the `Issue` model to directly associate each issue (and its related legislation/programs) with authoritative records (e.g., official city council minutes, state legislature URLs, or federal agency reports).
+- **Field-Level Attribution:** For any NLP-generated plain language summaries (e.g., `communityImpact`), we will utilize the `FieldMetadata` model to track exactly which source the text was derived from.
+- **UI Transparency Integration:** In the UI, every section described above (Local Handling, Laws, Impact) will feature a standardized "Source Citation" footer or a tooltip. This will provide users with a direct, clickable URL back to the primary government source (e.g., `detroitmi.gov`, `michigan.gov/sos`), ensuring all data presented is verifiable and not hallucinated or fake.
+
+Next Steps:
+-----------
+Once you approve this approach, we can begin implementation by:
+1. Updating `schema.prisma` with the new fields (e.g., `localHandlingStrategy`, `Program` model).
+2. Running `npx prisma db push` to sync the database.
+3. Updating the Seed script (`prisma/seed.ts`) to populate mock data for these new areas.
+4. Enhancing the `app/(site)/issues/[slug]/page.tsx` UI to display these four distinct sections.
