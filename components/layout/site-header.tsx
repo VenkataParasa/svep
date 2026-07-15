@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Civic Dashboard" },
-  { href: "/officials-new", label: "Elected Officials (New)" },
+  { href: "/officials-new", label: "Elected Officials" },
   { href: "/issues", label: "Civic Issues" },
 ];
 
@@ -41,12 +41,18 @@ export function SiteHeader() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const withZip = (href: string) => (zip && href === "/dashboard" ? `${href}?zip=${zip}` : href);
+  const withLocation = (href: string) => {
+    if (!zip) return href;
+    if (href === "/dashboard") return `${href}?zip=${encodeURIComponent(zip)}`;
+    if (href === "/officials-new")
+      return `${href}?address=${encodeURIComponent(zip)}`;
+    return href;
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <Image
             src="/detroit-logo.png"
             alt="City of Detroit"
@@ -55,17 +61,19 @@ export function SiteHeader() {
             className="h-9 w-auto rounded-sm bg-white p-0.5"
             priority
           />
-          <span className="hidden leading-tight sm:block">
+          <span className="hidden leading-tight md:block">
             <span className="block text-sm font-semibold">City of Detroit</span>
-            <span className="block text-xs text-muted-foreground">Voter Education Platform</span>
+            <span className="block text-xs text-muted-foreground">
+              Voter Education Platform
+            </span>
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden min-w-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
-              href={withZip(item.href)}
+              href={withLocation(item.href)}
               className={cn(
                 "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
                 pathname === item.href && "bg-accent text-accent-foreground"
@@ -76,10 +84,10 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button
             variant="outline"
-            className="hidden h-9 w-56 justify-start gap-2 text-muted-foreground sm:flex"
+            className="hidden h-9 w-56 justify-start gap-2 text-muted-foreground xl:flex"
             onClick={() => setSearchOpen(true)}
           >
             <Search className="size-4" />
@@ -91,7 +99,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 sm:hidden"
+            className="size-9 xl:hidden"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
           >
@@ -102,7 +110,14 @@ export function SiteHeader() {
 
           <Sheet>
             <SheetTrigger
-              render={<Button variant="ghost" size="icon" className="size-9 md:hidden" aria-label="Menu" />}
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 lg:hidden"
+                  aria-label="Menu"
+                />
+              }
             >
               <Menu className="size-4" />
             </SheetTrigger>
@@ -115,10 +130,11 @@ export function SiteHeader() {
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
-                    href={withZip(item.href)}
+                    href={withLocation(item.href)}
                     className={cn(
                       "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                      pathname === item.href && "bg-accent text-accent-foreground"
+                      pathname === item.href &&
+                        "bg-accent text-accent-foreground"
                     )}
                   >
                     {item.label}

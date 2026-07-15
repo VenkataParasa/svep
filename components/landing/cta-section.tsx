@@ -14,7 +14,7 @@ export function CtaSection() {
           Your neighborhood. Your issues. Your vote.
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-balance text-primary-foreground/85">
-          Look up your ZIP code and see exactly who represents you and what&rsquo;s on the table.
+          Look up your address or ZIP code and see exactly who represents you and what&rsquo;s on the table.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button

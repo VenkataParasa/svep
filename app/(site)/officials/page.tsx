@@ -5,19 +5,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Info, MapPin, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import cicero48103Data from "@/data/cicero-48103-3194.json";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 
-const CACHED_48103_OFFICIALS = ((cicero48103Data.response?.results?.candidates?.[0]?.officials || []) as unknown as CiceroOfficial[]).filter((o: CiceroOfficial) => o.office?.chamber?.election_frequency !== "");
-
-async function getCiceroOfficials(zip: string): Promise<CiceroOfficial[]> {
+async function getCiceroOfficials(location: string): Promise<CiceroOfficial[]> {
   const apiKey = process.env.CICERO_API_KEY;
   if (!apiKey) {
     throw new Error("Cicero API Key is not configured.");
   }
   
-  const url = `https://app.cicerodata.com/v3.1/official?search_postal=${zip}&search_country=US&format=json&key=${apiKey}`;
+  const isPostalCode = /^\d{5}(?:-\d{4})?$/.test(location.trim());
+  const params = new URLSearchParams({ format: "json", key: apiKey, max: "200" });
+  if (isPostalCode) {
+    params.set("search_postal", location.trim());
+    params.set("search_country", "US");
+  } else {
+    params.set("search_loc", location.trim());
+  }
+  const url = `https://app.cicerodata.com/v3.1/official?${params.toString()}`;
   
+  // Next.js caches each URL separately, so repeated searches for the same ZIP
+  // reuse the response while a new ZIP triggers a Cicero API request.
   const res = await fetch(url, { next: { revalidate: 3600 } });
   if (!res.ok) {
     throw new Error(`Failed to fetch from Cicero API: ${res.statusText}`);
@@ -49,7 +56,7 @@ export default async function OfficialsPage({
   let zipParam = params.zip as string | undefined;
   const categoryParam = (params.category as string) || "all";
   
-  // Default to 48103-3194 to save API credits and show local officials on initial load
+  // Show a local default when the page is opened without a ZIP search.
   if (!zipParam) {
     zipParam = "48103-3194";
   }
@@ -57,17 +64,13 @@ export default async function OfficialsPage({
   let officials: CiceroOfficial[] = [];
   let error: string | null = null;
   
-  if (zipParam === "48103-3194") {
-    officials = CACHED_48103_OFFICIALS;
-  } else {
-    try {
-      officials = await getCiceroOfficials(zipParam);
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        error = e.message;
-      } else {
-        error = String(e);
-      }
+  try {
+    officials = await getCiceroOfficials(zipParam);
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      error = e.message;
+    } else {
+      error = String(e);
     }
   }
 
@@ -124,7 +127,9 @@ export default async function OfficialsPage({
             <nav className="flex flex-col gap-2 text-sm font-medium">
               {categories.map(cat => {
                 const isActive = categoryParam === cat.id;
-                const href = `/officials?zip=${zipParam}${cat.id !== "all" ? `&category=${cat.id}` : ""}`;
+                const linkParams = new URLSearchParams({ zip: zipParam });
+                if (cat.id !== "all") linkParams.set("category", cat.id);
+                const href = `/officials?${linkParams.toString()}`;
                 return (
                   <Link 
                     key={cat.id}
@@ -158,7 +163,7 @@ export default async function OfficialsPage({
               <Info className="h-4 w-4" />
               <AlertTitle>No Results</AlertTitle>
               <AlertDescription>
-                We couldn&apos;t find any officials for this category in zip code <strong>{zipParam}</strong>.
+                We couldn&apos;t find any officials for this category at <strong>{zipParam}</strong>.
               </AlertDescription>
             </Alert>
           )}

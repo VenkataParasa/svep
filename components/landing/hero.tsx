@@ -40,7 +40,7 @@ export function Hero() {
             transition={{ duration: 0.55, delay: 0.12 }}
             className="mx-auto mt-5 max-w-2xl text-balance text-lg text-muted-foreground"
           >
-            Enter your ZIP code to see your current officeholders, active candidates,
+            Enter your full address or ZIP code to see your current officeholders, active candidates,
             and the civic issues affecting your area — every summary is built from
             official government records and links back to its sources.
           </motion.p>

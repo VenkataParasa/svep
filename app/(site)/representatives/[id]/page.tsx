@@ -12,7 +12,13 @@ import { SourceCitation } from "@/components/shared/source-citation";
 import { LegislationCard } from "@/components/legislation/legislation-card";
 import { PublicDocumentsList } from "@/components/shared/public-documents-list";
 import { prisma as db } from "@/lib/prisma";
-import type { Confidence, Party, Source, Legislation, PublicDocument } from "@/lib/types";
+import type {
+  Confidence,
+  Party,
+  Source,
+  Legislation,
+  PublicDocument,
+} from "@/lib/types";
 import { NOT_AVAILABLE } from "@/lib/constants";
 import { getIssueById } from "@/data/issues";
 
@@ -33,7 +39,7 @@ export default async function RepresentativeProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  
+
   const representative = await db.representative.findUnique({
     where: { id },
     include: {
@@ -43,41 +49,62 @@ export default async function RepresentativeProfilePage({
         include: {
           legislation: true,
           publicDocuments: true,
-        }
+        },
       },
       metadata: {
-        include: { source: true }
-      }
-    }
+        include: { source: true },
+      },
+    },
   });
 
   if (!representative) notFound();
 
   // Find metadata specifically for the biography if available
-  const bioMeta = representative.metadata.find(m => m.field === 'bio');
+  const bioMeta = representative.metadata.find((m) => m.field === "bio");
 
   // Aggregate legislation and public documents from related issues
-  const allLegislation = representative.issues.flatMap(issue => issue.legislation);
-  const uniqueLegislation = Array.from(new Map(allLegislation.map(leg => [leg.id, leg])).values());
+  const allLegislation = representative.issues.flatMap(
+    (issue) => issue.legislation
+  );
+  const uniqueLegislation = Array.from(
+    new Map(allLegislation.map((leg) => [leg.id, leg])).values()
+  );
 
-  const allDocuments = representative.issues.flatMap(issue => issue.publicDocuments);
-  const uniqueDocuments = Array.from(new Map(allDocuments.map(doc => [doc.id, doc])).values());
+  const allDocuments = representative.issues.flatMap(
+    (issue) => issue.publicDocuments
+  );
+  const uniqueDocuments = Array.from(
+    new Map(allDocuments.map((doc) => [doc.id, doc])).values()
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ label: "Leaders & Candidates", href: "/leaders" }, { label: representative.name }]} />
+      <Breadcrumbs
+        items={[
+          { label: "Leaders & Candidates", href: "/leaders" },
+          { label: representative.name },
+        ]}
+      />
 
       <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row">
-        <PersonAvatar name={representative.name} photoUrl={representative.photoUrl || undefined} size="xl" />
+        <PersonAvatar
+          name={representative.name}
+          photoUrl={representative.photoUrl || undefined}
+          size="xl"
+        />
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-semibold tracking-tight">{representative.name}</h1>
-          <p className="mt-1 text-lg text-muted-foreground">{representative.office}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {representative.name}
+          </h1>
+          <p className="mt-1 text-lg text-muted-foreground">
+            {representative.office}
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <PartyBadge party={representative.party as unknown as Party} />
             <span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               {levelLabel[representative.level]} Level
             </span>
-            <ConfidenceBadge confidence={representative.confidence as unknown as Confidence} note={representative.demoDataNote || undefined} />
+            {/* <ConfidenceBadge confidence={representative.confidence as unknown as Confidence} note={representative.demoDataNote || undefined} /> */}
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Landmark className="size-4" />
@@ -91,7 +118,7 @@ export default async function RepresentativeProfilePage({
           <CardTitle className="flex items-center">
             Biography
             {bioMeta && (
-              <SourceCitation 
+              <SourceCitation
                 field="Biography"
                 sourceName={bioMeta.source.name}
                 sourceUrl={bioMeta.source.url}
@@ -103,9 +130,14 @@ export default async function RepresentativeProfilePage({
         </CardHeader>
         <CardContent>
           {representative.nlpBioHtml ? (
-            <p className="leading-relaxed text-foreground/90" dangerouslySetInnerHTML={{ __html: representative.nlpBioHtml }} />
+            <p
+              className="leading-relaxed text-foreground/90"
+              dangerouslySetInnerHTML={{ __html: representative.nlpBioHtml }}
+            />
           ) : (
-            <p className="leading-relaxed text-foreground/90">{representative.bio || NOT_AVAILABLE}</p>
+            <p className="leading-relaxed text-foreground/90">
+              {representative.bio || NOT_AVAILABLE}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -113,7 +145,9 @@ export default async function RepresentativeProfilePage({
       <Card className="mt-5 rounded-2xl border-border/80 shadow-sm">
         <CardHeader>
           <CardTitle>Issue Positions</CardTitle>
-          <p className="text-sm text-muted-foreground">Only officially published positions are shown.</p>
+          <p className="text-sm text-muted-foreground">
+            Only officially published positions are shown.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {representative.issuePositions.length === 0 && (
@@ -121,13 +155,18 @@ export default async function RepresentativeProfilePage({
           )}
           {representative.issuePositions.map((position) => {
             const issue = getIssueById(position.issueId);
-            // In a real app we'd map this to a specific metadata record for this issue position. 
+            // In a real app we'd map this to a specific metadata record for this issue position.
             // For now, we'll pick the first source as a generic citation demo if a specific one isn't found.
-            const positionMeta = representative.metadata.find(m => m.field === `issuePosition_${position.issueId}`);
+            const positionMeta = representative.metadata.find(
+              (m) => m.field === `issuePosition_${position.issueId}`
+            );
             const fallbackSource = representative.sources[0];
 
             return (
-              <div key={position.issueId} className="border-l-2 border-primary/40 pl-4">
+              <div
+                key={position.issueId}
+                className="border-l-2 border-primary/40 pl-4"
+              >
                 <div className="flex items-center gap-2">
                   <Link
                     href={issue ? `/issues/${issue.slug}` : "/issues"}
@@ -135,15 +174,23 @@ export default async function RepresentativeProfilePage({
                   >
                     {issue?.title ?? position.issueId}
                   </Link>
-                  <SourceCitation 
-                    field={`Issue Position: ${issue?.title ?? position.issueId}`}
-                    sourceName={positionMeta?.source.name || fallbackSource?.name}
+                  <SourceCitation
+                    field={`Issue Position: ${
+                      issue?.title ?? position.issueId
+                    }`}
+                    sourceName={
+                      positionMeta?.source.name || fallbackSource?.name
+                    }
                     sourceUrl={positionMeta?.source.url || fallbackSource?.url}
                     confidenceScore={positionMeta?.confidenceScore || 90}
-                    lastUpdated={positionMeta?.lastUpdated || fallbackSource?.lastUpdated}
+                    lastUpdated={
+                      positionMeta?.lastUpdated || fallbackSource?.lastUpdated
+                    }
                   />
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{position.summary}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {position.summary}
+                </p>
               </div>
             );
           })}
@@ -177,9 +224,11 @@ export default async function RepresentativeProfilePage({
               {representative.contactEmail}
             </span>
           )}
-          {!representative.contactWebsite && !representative.contactPhone && !representative.contactEmail && (
-            <span className="text-muted-foreground">{NOT_AVAILABLE}</span>
-          )}
+          {!representative.contactWebsite &&
+            !representative.contactPhone &&
+            !representative.contactEmail && (
+              <span className="text-muted-foreground">{NOT_AVAILABLE}</span>
+            )}
         </CardContent>
       </Card>
 
@@ -193,15 +242,23 @@ export default async function RepresentativeProfilePage({
       {uniqueLegislation.length > 0 && (
         <section className="mt-10">
           <h2 className="text-xl font-semibold">Related Legislation</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Bills and legislation tied to the civic issues {representative.name} is involved in.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bills and legislation tied to the civic issues {representative.name}{" "}
+            is involved in.
+          </p>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {uniqueLegislation.map((leg) => {
               const formattedLeg = {
                 ...leg,
                 sponsors: JSON.parse(leg.sponsors),
-                lastUpdated: leg.lastUpdated.toISOString()
+                lastUpdated: leg.lastUpdated.toISOString(),
               };
-              return <LegislationCard key={leg.id} legislation={formattedLeg as unknown as Legislation} />;
+              return (
+                <LegislationCard
+                  key={leg.id}
+                  legislation={formattedLeg as unknown as Legislation}
+                />
+              );
             })}
           </div>
         </section>
@@ -213,8 +270,13 @@ export default async function RepresentativeProfilePage({
             <FileStack className="size-5 text-primary" />
             Relevant Public Records
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground mb-4">Official documents, meeting minutes, and records related to their civic issues.</p>
-          <PublicDocumentsList documents={uniqueDocuments as unknown as PublicDocument[]} />
+          <p className="mt-1 text-sm text-muted-foreground mb-4">
+            Official documents, meeting minutes, and records related to their
+            civic issues.
+          </p>
+          <PublicDocumentsList
+            documents={uniqueDocuments as unknown as PublicDocument[]}
+          />
         </section>
       )}
 
