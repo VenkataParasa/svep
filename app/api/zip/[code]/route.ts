@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
-import { getJurisdictionByZip } from "@/data/jurisdictions";
-import { simulateLatency } from "@/lib/mock-latency";
 
 export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ code: string }> }
+  request: Request,
+  { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
-  const latencyMs = await simulateLatency();
-  const jurisdiction = getJurisdictionByZip(code);
-  if (!jurisdiction) {
+  if (!/^\d{5}(?:-?\d{4})?$/.test(code)) {
     return NextResponse.json(
-      { error: `ZIP code ${code} is not covered by this demo.` },
-      { status: 404 }
+      { error: "A valid ZIP or ZIP+4 is required." },
+      { status: 400 },
     );
   }
-  return NextResponse.json({ data: jurisdiction, meta: { latencyMs } });
+
+  const destination = new URL("/api/legislative-districts", request.url);
+  destination.searchParams.set("location", code);
+  return NextResponse.redirect(destination);
 }

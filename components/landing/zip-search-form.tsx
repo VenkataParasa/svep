@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useZipContextStore, isValidZip } from "@/store/zip-context-store";
-import { zipCodes } from "@/data/jurisdictions";
 
 const schema = z.object({
   zip: z
@@ -27,24 +26,43 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function ZipSearchForm({ className }: { className?: string }) {
+export function ZipSearchForm({
+  className,
+  destination = "jurisdictions",
+}: {
+  className?: string;
+  destination?: "jurisdictions" | "dashboard";
+}) {
   const router = useRouter();
   const setZip = useZipContextStore((s) => s.setZip);
+  const storedLocation = useZipContextStore((s) => s.location);
+  const setLocation = useZipContextStore((s) => s.setLocation);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { zip: "" },
   });
 
+  React.useEffect(() => {
+    if (storedLocation && !form.getValues("zip")) {
+      form.setValue("zip", storedLocation);
+    }
+  }, [storedLocation, form]);
+
   async function onSubmit(values: FormValues) {
     const location = values.zip.trim();
+    setLocation(location);
+
+    if (destination === "jurisdictions") {
+      router.push(`/jurisdictions?location=${encodeURIComponent(location)}`);
+      return;
+    }
+
     let resolvedZip = location;
-    const postalMatch = location.match(/^(\d{5})(?:-\d{4})?$/);
+    const postalMatch = location.match(/^\d{5}$/);
 
     if (postalMatch) {
-      // Dashboard jurisdiction records are keyed by the base ZIP. Retain ZIP+4
-      // support at input while matching the corresponding five-digit area.
-      resolvedZip = postalMatch[1];
+      resolvedZip = location;
     } else {
       try {
         const response = await fetch(`/api/v1/geocode?address=${encodeURIComponent(location)}`);
@@ -52,7 +70,7 @@ export function ZipSearchForm({ className }: { className?: string }) {
         if (!response.ok || !payload.address?.zipCode) {
           throw new Error(payload.error || "We could not find that address.");
         }
-        resolvedZip = payload.address.zipCode;
+        resolvedZip = String(payload.address.zipCode).match(/\b\d{5}\b/)?.[0] ?? "";
       } catch (error) {
         form.setError("zip", {
           message: error instanceof Error ? error.message : "We could not find that address.",
@@ -63,7 +81,7 @@ export function ZipSearchForm({ className }: { className?: string }) {
 
     if (!isValidZip(resolvedZip)) {
       form.setError("zip", {
-        message: `This demo covers ${zipCodes.length} Detroit-area ZIP codes (48201–48243). The resolved ZIP ${resolvedZip} is outside the covered area.`,
+        message: "The location service did not return a valid five-digit ZIP code.",
       });
       return;
     }

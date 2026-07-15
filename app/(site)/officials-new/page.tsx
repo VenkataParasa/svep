@@ -19,27 +19,28 @@ export default async function OfficialsNewPage({
   searchParams: Promise<{ address?: string }>;
 }) {
   const resolvedParams = await searchParams;
-  const address = resolvedParams.address || "48226";
-
-  const pipeline = new CivicIntelligencePipeline(address);
+  const address = resolvedParams.address?.trim() || "";
 
   let districtDataRecord:
     | (Record<string, DistrictData> & { error?: string })
     | null = null;
   let error: string | null = null;
 
-  try {
-    const resultJsonString = await pipeline.run();
-    districtDataRecord = JSON.parse(resultJsonString);
-    if (districtDataRecord?.error) {
-      error = districtDataRecord.error;
-      districtDataRecord = null;
-    }
-  } catch (e: unknown) {
-    if (e instanceof Error) {
-      error = e.message;
-    } else {
-      error = "Failed to resolve data for this address.";
+  if (address) {
+    const pipeline = new CivicIntelligencePipeline(address);
+    try {
+      const resultJsonString = await pipeline.run();
+      districtDataRecord = JSON.parse(resultJsonString);
+      if (districtDataRecord?.error) {
+        error = districtDataRecord.error;
+        districtDataRecord = null;
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        error = e.message;
+      } else {
+        error = "Failed to resolve data for this address.";
+      }
     }
   }
 
@@ -75,6 +76,16 @@ export default async function OfficialsNewPage({
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {!address && (
+        <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-8 text-center">
+          <Info className="mb-4 size-10 text-muted-foreground" />
+          <h3 className="text-lg font-medium">Enter a location</h3>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            Use a full address for precise officials, or a ZIP code for an approximate centroid lookup.
+          </p>
+        </div>
       )}
 
       {districtDataRecord &&

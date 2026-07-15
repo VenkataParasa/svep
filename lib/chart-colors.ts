@@ -1,6 +1,5 @@
 import { issues } from "@/data/issues";
-import { zipCodes } from "@/data/jurisdictions";
-import { candidates } from "@/data/candidates";
+import { analyticsData } from "@/data/analytics";
 
 // Fixed categorical color slots (validated with the dataviz skill's
 // palette validator for both light and dark chart surfaces). Colors are
@@ -23,5 +22,9 @@ function buildColorMap(keys: string[]): Record<string, string> {
 }
 
 export const issueColorMap = buildColorMap(issues.map((i) => i.title));
-export const zipColorMap = buildColorMap([...zipCodes]);
-export const candidateColorMap = buildColorMap(candidates.map((c) => c.name));
+export const zipColorMap = buildColorMap(
+  analyticsData.popularZipCodes.map((item) => item.zip),
+);
+export const candidateColorMap = buildColorMap(
+  analyticsData.candidateViews.map((item) => item.candidate),
+);

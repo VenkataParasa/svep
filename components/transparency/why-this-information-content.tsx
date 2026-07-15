@@ -13,39 +13,28 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import { SourceList } from "@/components/shared/source-list";
-import { getJurisdictionByZip } from "@/data/jurisdictions";
 import { getIssueById } from "@/data/issues";
 import { sources } from "@/data/sources";
 import { DATA_RETRIEVED_DATE, NOT_AVAILABLE } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { useZipContextStore } from "@/store/zip-context-store";
 
 export function WhyThisInformationContent() {
   const searchParams = useSearchParams();
   const zip = searchParams.get("zip");
   const issueId = searchParams.get("issue");
+  const savedLocation = useZipContextStore((state) => state.location);
 
-  const jurisdiction = zip ? getJurisdictionByZip(zip) : undefined;
   const issue = issueId ? getIssueById(issueId) : undefined;
 
   const governmentOffice = issue
     ? issue.relatedDepartments[0]?.name ?? NOT_AVAILABLE
-    : jurisdiction
-    ? jurisdiction.governmentOffice
-    : NOT_AVAILABLE;
+    : "Resolved dynamically through Cicero";
 
-  const lastUpdated = issue?.lastUpdated ?? jurisdiction?.lastUpdated;
+  const lastUpdated = issue?.lastUpdated;
 
   const relatedSources = issue
     ? sources.filter((s) => issue.sourceIds.includes(s.id))
-    : jurisdiction
-    ? sources.filter((s) =>
-        [
-          "src-detroitmi-council",
-          "src-detroit-opendata-districts",
-          "src-mi-senate-chang",
-          "src-mi-house-directory",
-        ].includes(s.id)
-      )
     : [];
   const relatedSourcesCount = relatedSources.length;
 
@@ -82,9 +71,7 @@ export function WhyThisInformationContent() {
           <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Jurisdiction</span>
             <span className="text-right font-medium">
-              {jurisdiction
-                ? `${jurisdiction.neighborhood}, ${jurisdiction.city}`
-                : NOT_AVAILABLE}
+              {savedLocation ?? zip ?? NOT_AVAILABLE}
             </span>
           </div>
           <div className="flex justify-between gap-3">
@@ -141,7 +128,7 @@ export function WhyThisInformationContent() {
           {/* {jurisdiction && (
             <ConfidenceBadge confidence={jurisdiction.councilDistrictConfidence} note={jurisdiction.demoDataNote} />
           )} */}
-          {!issue && !jurisdiction && (
+          {!issue && !savedLocation && (
             <p className="text-sm text-muted-foreground">
               Select a ZIP code or issue to see its specific confidence rating.
             </p>
@@ -169,14 +156,10 @@ export function WhyThisInformationContent() {
         <CardContent>
           <p className="text-sm leading-relaxed text-muted-foreground">
             {issue
-              ? `This issue was surfaced because it's cataloged as active civic content relevant to Detroit ${
-                  jurisdiction
-                    ? `and specifically flagged as a top issue for ${jurisdiction.neighborhood}`
-                    : "residents"
-                }. Its summary, related legislation, and community impact are derived from the official sources listed below.`
-              : jurisdiction
-              ? `Your representatives and top issues were selected by matching ZIP code ${zip} to its city, state, and federal jurisdictions using the boundary descriptions cataloged in our data layer.`
-              : "Provide a ZIP code or select an issue to see a specific explanation of how that content was matched and sourced."}
+              ? "This issue is cataloged as active civic content. Its summary, related legislation, and community impact are derived from the sources listed below."
+              : savedLocation
+                ? `Your jurisdictions and representatives were resolved dynamically from ${savedLocation} through Cicero's address-level boundary matching.`
+                : "Provide an address, ZIP code, or select an issue to see how that content was matched and sourced."}
           </p>
         </CardContent>
       </Card>

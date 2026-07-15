@@ -6,7 +6,7 @@ const columns = [
     title: "Voter Services",
     links: [
       { href: "/dashboard", label: "My Civic Dashboard" },
-      { href: "/leaders", label: "Leaders & Candidates" },
+      { href: "/leaders", label: "Officeholders" },
       { href: "/issues", label: "Civic Issues" },
       { href: "/search", label: "Search the Platform" },
     ],

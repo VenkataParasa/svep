@@ -58,9 +58,9 @@ export function GlobalSearchCommand({
       open={open}
       onOpenChange={onOpenChange}
       title="Global Search"
-      description="Search issues, candidates, representatives, and legislation"
+      description="Search civic issues and legislation"
     >
-      <CommandInput placeholder="Search issues, candidates, representatives, bills..." />
+      <CommandInput placeholder="Search issues and bills..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         {(Object.keys(grouped) as SearchResultType[]).map((type) => {

@@ -40,22 +40,10 @@ export function LocationCard({
         <div className="rounded-xl bg-accent/40 p-3">
           <div className="text-2xl font-semibold">{jurisdiction.zip}</div>
           <div className="text-sm text-muted-foreground">
-            {jurisdiction.neighborhood}, {jurisdiction.city}, MI
+            {jurisdiction.neighborhood} · {jurisdiction.city} · {jurisdiction.county}
           </div>
         </div>
 
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-border bg-muted mt-2">
-          <div className="absolute left-2 top-2 z-10 rounded-md border bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">
-            City Council / local district boundary
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/jurisdiction-map?zip=${jurisdiction.zip}`}
-            alt={`Map of Jurisdiction for ${jurisdiction.zip}`}
-            className="h-full w-full object-cover transition-opacity duration-300"
-            loading="lazy"
-          />
-        </div>
         <dl className="space-y-2.5">
           {rows.map((row, index) => (
             <div

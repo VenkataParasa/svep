@@ -23,7 +23,10 @@ import { NOT_AVAILABLE } from "@/lib/constants";
 import { getIssueById } from "@/data/issues";
 
 export async function generateStaticParams() {
-  const reps = await db.representative.findMany({ select: { id: true } });
+  const reps = await db.representative.findMany({
+    where: { id: { startsWith: "rep-cicero-" } },
+    select: { id: true },
+  });
   return reps.map((r) => ({ id: r.id }));
 }
 
@@ -39,6 +42,7 @@ export default async function RepresentativeProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!id.startsWith("rep-cicero-")) notFound();
 
   const representative = await db.representative.findUnique({
     where: { id },
@@ -81,7 +85,7 @@ export default async function RepresentativeProfilePage({
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs
         items={[
-          { label: "Leaders & Candidates", href: "/leaders" },
+          { label: "Officeholders", href: "/leaders" },
           { label: representative.name },
         ]}
       />

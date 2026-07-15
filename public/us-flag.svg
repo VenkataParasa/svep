@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 741 390" role="img" aria-labelledby="title">
+  <title id="title">Flag of the United States</title>
+  <path fill="#fff" d="M0 0h741v390H0z"/>
+  <g fill="#b22234"><path d="M0 0h741v30H0zM0 60h741v30H0zM0 120h741v30H0zM0 180h741v30H0zM0 240h741v30H0zM0 300h741v30H0zM0 360h741v30H0z"/></g>
+  <path fill="#3c3b6e" d="M0 0h296.4v210H0z"/>
+  <defs><path id="s" fill="#fff" d="m0-8 1.8 5.5h5.8L2.9.9l1.8 5.5L0 3l-4.7 3.4L-2.9.9l-4.7-3.4h5.8z"/></defs>
+  <g transform="translate(24.7 21)">
+    <g id="r"><use href="#s"/><use href="#s" x="49.4"/><use href="#s" x="98.8"/><use href="#s" x="148.2"/><use href="#s" x="197.6"/><use href="#s" x="247"/></g>
+    <use href="#r" y="42"/><use href="#r" y="84"/><use href="#r" y="126"/><use href="#r" y="168"/>
+    <g id="q" transform="translate(24.7 21)"><use href="#s"/><use href="#s" x="49.4"/><use href="#s" x="98.8"/><use href="#s" x="148.2"/><use href="#s" x="197.6"/></g>
+    <use href="#q" y="42"/><use href="#q" y="84"/><use href="#q" y="126"/>
+  </g>
+</svg>

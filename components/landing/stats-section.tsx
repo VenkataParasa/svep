@@ -1,14 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { representatives } from "@/data/representatives";
 import { issues } from "@/data/issues";
 import { sources } from "@/data/sources";
-import { zipCodes } from "@/data/jurisdictions";
 
 const stats = [
-  { label: "ZIP codes covered", value: `${zipCodes.length}` },
-  { label: "Elected officials tracked", value: `${representatives.length}` },
+  { label: "Location coverage", value: "U.S." },
+  { label: "Elected officials", value: "Live" },
   { label: "Civic issue categories", value: `${issues.length}` },
   { label: "Cataloged official sources", value: `${sources.length}+` },
 ];

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { representatives } from "@/data/representatives";
-import { simulateLatency } from "@/lib/mock-latency";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const latencyMs = await simulateLatency();
+  const representatives = await prisma.representative.findMany({
+    where: { id: { startsWith: "rep-cicero-" } },
+    orderBy: [{ level: "asc" }, { office: "asc" }, { name: "asc" }],
+  });
   return NextResponse.json({
     data: representatives,
-    meta: { count: representatives.length, latencyMs },
+    meta: { count: representatives.length, source: "database" },
   });
 }

@@ -1,18 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Building2, FileStack, HelpCircle, Users2, Vote } from "lucide-react";
+import { Building2, FileStack, HelpCircle, Users2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IssueIcon } from "@/components/issues/issue-icon";
 import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import { RepresentativeListItem } from "@/components/representatives/representative-list-item";
-import { CandidateCard } from "@/components/candidates/candidate-card";
 import { LegislationCard } from "@/components/legislation/legislation-card";
 import { SourceList } from "@/components/shared/source-list";
 import { PublicDocumentsList } from "@/components/shared/public-documents-list";
-import { getIssueBySlug as getStaticIssue } from "@/data/issues";
-import { getCandidateById } from "@/data/candidates";
 import { formatDate } from "@/lib/utils";
 import { prisma as db } from "@/lib/prisma";
 import type {
@@ -47,14 +44,6 @@ export default async function IssueDetailPage({
   });
 
   if (!issue) notFound();
-
-  // Fallback for static unmigrated Candidate relation
-  const staticIssue = getStaticIssue(slug);
-  const relatedCandidates = staticIssue
-    ? staticIssue.candidateIds
-        .map(getCandidateById)
-        .filter((c): c is NonNullable<typeof c> => Boolean(c))
-    : [];
 
   const relatedLegislation = issue.legislation;
 
@@ -194,20 +183,6 @@ export default async function IssueDetailPage({
                 key={rep.id}
                 representative={rep as unknown as Representative}
               />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {relatedCandidates.length > 0 && (
-        <section className="mt-10">
-          <h2 className="flex items-center gap-2 text-xl font-semibold">
-            <Vote className="size-5 text-primary" />
-            Candidates Involved
-          </h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {relatedCandidates.map((candidate) => (
-              <CandidateCard key={candidate.id} candidate={candidate} />
             ))}
           </div>
         </section>

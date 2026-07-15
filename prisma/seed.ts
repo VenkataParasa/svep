@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { sources } from '../data/sources';
-import { representatives } from '../data/representatives';
-import { metadataFields } from '../data/metadata';
 import { issues } from '../data/issues';
 
 const prisma = new PrismaClient();
@@ -26,41 +24,9 @@ async function main() {
     });
   }
   
-  // 2. Seed Representatives
-  for (const rep of representatives) {
-    await prisma.representative.upsert({
-      where: { id: rep.id },
-      update: {},
-      create: {
-        id: rep.id,
-        name: rep.name,
-        office: rep.office,
-        level: rep.level,
-        party: rep.party,
-        jurisdiction: rep.jurisdiction,
-        district: rep.district,
-        photoUrl: rep.photoUrl,
-        isDemoPhoto: rep.isDemoPhoto,
-        confidence: rep.confidence,
-        bio: rep.bio,
-        demoDataNote: rep.demoDataNote,
-        contactWebsite: rep.contact.website,
-        contactPhone: rep.contact.phone,
-        contactEmail: rep.contact.email,
-        sources: {
-          connect: rep.sourceIds.map(id => ({ id }))
-        },
-        issuePositions: {
-          create: rep.issuePositions.map(pos => ({
-            issueId: pos.issueId,
-            summary: pos.summary
-          }))
-        }
-      },
-    });
-  }
+  // 2. Representatives are populated dynamically from Cicero lookups.
 
-  // 3. Seed Field Metadata
+  // 3. Seed Field Metadata for dynamically stored records when sources exist.
   // We'll map the metadata records from metadata.ts to specific fields if possible.
   // We'll attach a metadata record to every representative's bio for demonstration.
   await prisma.fieldMetadata.deleteMany();
@@ -119,9 +85,6 @@ async function main() {
             url: doc.url,
             date: doc.date
           }))
-        },
-        representatives: {
-          connect: issue.representativeIds.map(id => ({ id }))
         },
         sources: {
           connect: issue.sourceIds.map(id => ({ id }))

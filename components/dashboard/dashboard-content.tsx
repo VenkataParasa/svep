@@ -3,15 +3,11 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Users, Vote } from "lucide-react";
+import { Users } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { LocationCard } from "@/components/dashboard/location-card";
-import { FederalRepresentationMap } from "@/components/dashboard/federal-representation-map";
-import { SubdivisionRepresentationMap } from "@/components/dashboard/subdivision-representation-map";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RepresentativeListItem } from "@/components/representatives/representative-list-item";
-import { CandidateCard } from "@/components/candidates/candidate-card";
-import { IssueCard } from "@/components/issues/issue-card";
 import { ZipSearchForm } from "@/components/landing/zip-search-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,11 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getJurisdictionByZip } from "@/data/jurisdictions";
-import { getIssueById } from "@/data/issues";
-import { candidates } from "@/data/candidates";
 import { useZipContextStore, isValidZip } from "@/store/zip-context-store";
-import type { GovLevel, Party } from "@/lib/types";
+import type { GovLevel, Party, ZipJurisdiction } from "@/lib/types";
 
 type OfficeLevelFilter = GovLevel | "all";
 
@@ -36,6 +29,48 @@ interface CurrentOfficial {
   level: GovLevel;
   party: Party;
   photoUrl: string;
+}
+
+type DynamicDistrict = {
+  type: string;
+  label: string;
+  officials: Array<{
+    id: string | null;
+    name: string;
+    title: string;
+    party: string;
+    photoUrl: string;
+  }>;
+};
+
+type DynamicLocation = {
+  match: {
+    formattedAddress: string;
+    city: string;
+    county: string;
+    state: string;
+    postalCode: string;
+  };
+  districts: DynamicDistrict[];
+};
+
+function levelFromDistrict(type: string): GovLevel {
+  if (type.startsWith("NATIONAL")) return "federal";
+  if (type.startsWith("STATE")) return "state";
+  return "city";
+}
+
+function partyFromCicero(value: string): Party {
+  const party = value.toLowerCase();
+  if (party.includes("democrat")) return "Democratic";
+  if (party.includes("republican")) return "Republican";
+  if (party.includes("independent")) return "Independent";
+  if (party.includes("nonpartisan") || party.includes("unknown")) return "Nonpartisan";
+  return "Other";
+}
+
+function districtLabel(districts: DynamicDistrict[], type: string) {
+  return districts.find((district) => district.type === type)?.label ?? "Not returned by Cicero";
 }
 
 function getOfficeRank(level: GovLevel, office: string): number {
@@ -96,7 +131,11 @@ function getOfficeRank(level: GovLevel, office: string): number {
 export function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { zip: storedZip, setZip } = useZipContextStore();
+  const {
+    zip: storedZip,
+    location: storedLocation,
+    setResolvedLocation,
+  } = useZipContextStore();
   const queryZip = searchParams.get("zip");
   const [representatives, setRepresentatives] = React.useState<
     CurrentOfficial[]
@@ -106,16 +145,21 @@ export function DashboardContent() {
   const [representativesError, setRepresentativesError] = React.useState<
     string | null
   >(null);
+  const [jurisdiction, setJurisdiction] = React.useState<ZipJurisdiction | null>(null);
   const [officeLevelFilter, setOfficeLevelFilter] =
     React.useState<OfficeLevelFilter>("all");
 
   React.useEffect(() => {
-    if (queryZip && isValidZip(queryZip) && queryZip !== storedZip) {
-      setZip(queryZip);
+    if (
+      queryZip &&
+      isValidZip(queryZip) &&
+      (queryZip !== storedZip || !storedLocation)
+    ) {
+      setResolvedLocation(queryZip, queryZip);
     } else if (!queryZip && storedZip && isValidZip(storedZip)) {
       router.replace(`/dashboard?zip=${storedZip}`);
     }
-  }, [queryZip, storedZip, setZip, router]);
+  }, [queryZip, storedZip, storedLocation, setResolvedLocation, router]);
 
   const activeZip = queryZip && isValidZip(queryZip) ? queryZip : null;
 
@@ -125,7 +169,8 @@ export function DashboardContent() {
     setRepresentativesLoading(true);
     setRepresentativesError(null);
 
-    fetch(`/api/current-officials?zip=${encodeURIComponent(activeZip)}`, {
+    const locationQuery = storedLocation || activeZip;
+    fetch(`/api/legislative-districts?location=${encodeURIComponent(locationQuery)}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -134,11 +179,47 @@ export function DashboardContent() {
           throw new Error(
             payload.error || "Unable to retrieve current officials."
           );
-        setRepresentatives(payload.data || []);
+        const location = payload.data as DynamicLocation;
+        const seenOfficials = new Set<string>();
+        const officials = location.districts.flatMap((district) =>
+          district.officials.flatMap((official) => {
+            const key = official.id ?? `${official.name}-${official.title}`;
+            if (seenOfficials.has(key)) return [];
+            seenOfficials.add(key);
+            return [{
+              id: key,
+              name: official.name,
+              office: official.title,
+              level: levelFromDistrict(district.type),
+              party: partyFromCicero(official.party),
+              photoUrl: official.photoUrl,
+            }];
+          }),
+        );
+        setRepresentatives(officials);
+        setJurisdiction({
+          zip: location.match.postalCode.match(/\b\d{5}\b/)?.[0] ?? activeZip,
+          city: location.match.city || "Location returned by Cicero",
+          county: location.match.county || "Not returned by Cicero",
+          neighborhood: location.match.formattedAddress,
+          councilDistrict: districtLabel(location.districts, "LOCAL"),
+          councilDistrictConfidence: "verified",
+          congressionalDistrict: districtLabel(location.districts, "NATIONAL_LOWER"),
+          congressionalConfidence: "verified",
+          stateSenateDistrict: districtLabel(location.districts, "STATE_UPPER"),
+          stateSenateConfidence: "verified",
+          stateHouseDistrict: districtLabel(location.districts, "STATE_LOWER"),
+          stateHouseConfidence: "verified",
+          representativeIds: officials.map((official) => official.id),
+          topIssueIds: [],
+          governmentOffice: "Cicero legislative district service",
+          lastUpdated: new Date().toISOString(),
+        });
       })
       .catch((error) => {
         if (error instanceof Error && error.name !== "AbortError") {
           setRepresentatives([]);
+          setJurisdiction(null);
           setRepresentativesError(error.message);
         }
       })
@@ -147,7 +228,7 @@ export function DashboardContent() {
       });
 
     return () => controller.abort();
-  }, [activeZip]);
+  }, [activeZip, storedLocation]);
 
   if (!activeZip) {
     return (
@@ -156,15 +237,14 @@ export function DashboardContent() {
           Enter an address or ZIP code to see your dashboard
         </h1>
         <p className="mt-2 text-muted-foreground">
-          This demo covers 37 Detroit-area ZIP codes (48201&ndash;48243) — try
-          48226 (Downtown) or 48219 (Northwest).
+          Enter any U.S. street address, ZIP code, or ZIP+4. A full address
+          produces more precise jurisdiction matching than a ZIP centroid.
         </p>
         <ZipSearchForm className="mt-8" />
       </div>
     );
   }
 
-  const jurisdiction = getJurisdictionByZip(activeZip)!;
   const visibleRepresentatives = representatives.filter(
     (representative) =>
       officeLevelFilter === "all" || representative.level === officeLevelFilter
@@ -174,12 +254,6 @@ export function DashboardContent() {
     { level: "state", label: "State" },
     { level: "federal", label: "Federal" },
   ];
-  const topIssues = jurisdiction.topIssueIds
-    .map(getIssueById)
-    .filter((i): i is NonNullable<typeof i> => Boolean(i));
-  const activeCandidates = candidates.filter((c) => c.status !== "withdrawn");
-  const otherCandidates = candidates.filter((c) => c.status === "withdrawn");
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
@@ -195,7 +269,7 @@ export function DashboardContent() {
             Your Civic Dashboard
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Personalized for {jurisdiction.neighborhood} ({jurisdiction.zip})
+            Personalized for {jurisdiction?.neighborhood ?? storedLocation ?? activeZip}
           </p>
         </div>
       </motion.div>
@@ -204,18 +278,24 @@ export function DashboardContent() {
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Search another location</h2>
           <p className="text-xs text-muted-foreground">
-            Enter a Detroit-area street address, ZIP code, or ZIP+4 to update your dashboard.
+            Enter any U.S. street address, ZIP code, or ZIP+4 to update your dashboard.
           </p>
         </div>
-        <ZipSearchForm />
+        <ZipSearchForm destination="dashboard" />
       </div>
 
       <div className="mt-6">
-        <QuickActions zip={jurisdiction.zip} />
+        <QuickActions zip={jurisdiction?.zip ?? activeZip} />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <LocationCard jurisdiction={jurisdiction} />
+        {jurisdiction ? (
+          <LocationCard jurisdiction={jurisdiction} />
+        ) : (
+          <Card className="rounded-2xl border-border/80 p-6 text-sm text-muted-foreground">
+            Resolving the exact jurisdiction for this location…
+          </Card>
+        )}
 
         <Card className="rounded-2xl border-border/80 shadow-sm lg:col-span-2">
           <CardHeader>
@@ -276,15 +356,6 @@ export function DashboardContent() {
                           {levelRepresentatives.length}
                         </span>
                       </div>
-                      {level === "federal" && (
-                        <FederalRepresentationMap zip={jurisdiction.zip} />
-                      )}
-                      {level === "state" && (
-                        <SubdivisionRepresentationMap zip={jurisdiction.zip} kind="state" />
-                      )}
-                      {level === "city" && (
-                        <SubdivisionRepresentationMap zip={jurisdiction.zip} kind="local" />
-                      )}
                       <div className="space-y-2.5">
                         {levelRepresentatives.map((representative) => (
                           <RepresentativeListItem
@@ -306,35 +377,6 @@ export function DashboardContent() {
         </Card>
       </div>
 
-      <section className="mt-10">
-        <div className="flex items-center gap-2">
-          <Vote className="size-5 text-primary" />
-          <h2 className="text-xl font-semibold">
-            Active Candidates — 2026 Michigan Governor&rsquo;s Race
-          </h2>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Michigan&rsquo;s statewide election this cycle, since Gov. Whitmer is
-          term-limited.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...activeCandidates, ...otherCandidates].map((candidate) => (
-            <CandidateCard key={candidate.id} candidate={candidate} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold">Top Civic Issues in Your Area</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Based on recent activity and relevance to {jurisdiction.neighborhood}.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {topIssues.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} />
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
