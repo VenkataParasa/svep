@@ -1,0 +1,2 @@
+Issue,Error Message,Root Cause,Solution
+"Vercel Prisma Client Query Engine Missing","Prisma Client could not locate the Query Engine for runtime 'rhel-openssl-3.0.x'","Vercel build environment is Debian but AWS Lambda runtime is RHEL (Amazon Linux). Furthermore, Vercel caches node_modules so the client might not regenerate correctly.","Added 'rhel-openssl-3.0.x' to binaryTargets in schema.prisma and updated package.json build script to 'prisma generate && next build' to bypass cache."
