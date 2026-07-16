@@ -1,8 +1,10 @@
 import {
+  BadgeDollarSign,
   Bus,
   GraduationCap,
   HeartPulse,
   Home,
+  Landmark,
   Leaf,
   ShieldCheck,
   TreePine,
@@ -19,6 +21,8 @@ const iconMap: Record<string, LucideIcon> = {
   Leaf,
   TrendingUp,
   TreePine,
+  BadgeDollarSign,
+  Landmark,
 };
 
 export function IssueIcon({ name, className }: { name: string; className?: string }) {

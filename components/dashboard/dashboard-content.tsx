@@ -3,15 +3,18 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Users } from "lucide-react";
+import { Users, Vote } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { LocationCard } from "@/components/dashboard/location-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RepresentativeListItem } from "@/components/representatives/representative-list-item";
+import { CandidateListItem } from "@/components/candidates/candidate-list-item";
 import { ZipSearchForm } from "@/components/landing/zip-search-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useZipContextStore } from "@/store/zip-context-store";
+import { getRacesForZip, isSupportedCandidateZip } from "@/data/candidates";
+import { formatDate } from "@/lib/utils";
 import type { GovLevel, Party, ZipJurisdiction } from "@/lib/types";
 
 type OfficeLevelFilter = GovLevel | "all";
@@ -177,6 +180,8 @@ export function DashboardContent() {
     React.useState<ZipJurisdiction | null>(null);
   const [officeLevelFilter, setOfficeLevelFilter] =
     React.useState<OfficeLevelFilter>("all");
+  const [candidateOfficeFilter, setCandidateOfficeFilter] =
+    React.useState<string>("all");
 
   React.useEffect(() => {
     if (!queryLocation && !legacyZip && !hasCoordinates && locationInput) {
@@ -480,6 +485,89 @@ export function DashboardContent() {
           </CardContent>
         </Card>
       </div>
+
+      {isSupportedCandidateZip(jurisdiction?.zip) && (() => {
+        const racesForZip = getRacesForZip(jurisdiction!.zip);
+        const candidateOfficeOptions = Array.from(
+          new Set(racesForZip.map(({ race }) => race.officeTitle))
+        );
+        const visibleRaces = racesForZip.filter(
+          ({ race }) =>
+            candidateOfficeFilter === "all" ||
+            race.officeTitle === candidateOfficeFilter
+        );
+        return (
+        <div className="mt-8">
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Vote className="size-4.5 text-primary" />
+                  2026 Candidates on Your Ballot
+                </CardTitle>
+                <Tabs
+                  value={candidateOfficeFilter}
+                  onValueChange={(value) =>
+                    setCandidateOfficeFilter(value || "all")
+                  }
+                >
+                  <TabsList aria-label="Filter candidates by office">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    {candidateOfficeOptions.map((officeTitle) => (
+                      <TabsTrigger key={officeTitle} value={officeTitle}>
+                        {officeTitle}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Active, currently-filed candidates for the offices up for
+                election in your jurisdiction. Michigan&apos;s primary is
+                August 4, 2026; the general election is November 3, 2026.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {visibleRaces.map(({ race, candidates }) => (
+                <section key={race.id} aria-labelledby={`race-${race.id}`}>
+                  <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3 id={`race-${race.id}`} className="text-sm font-semibold">
+                      {race.officeTitle}
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        — {race.jurisdiction}
+                      </span>
+                    </h3>
+                    <span className="text-xs text-muted-foreground">
+                      Primary {formatDate(race.primaryDate)} · General{" "}
+                      {formatDate(race.generalDate)}
+                    </span>
+                  </div>
+                  <p className="mb-2.5 text-xs text-muted-foreground">
+                    {race.description}
+                  </p>
+                  {candidates.length > 0 ? (
+                    <div className="space-y-2">
+                      {candidates.map((candidate) => (
+                        <CandidateListItem key={candidate.id} candidate={candidate} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No active candidates on file for this race.
+                    </p>
+                  )}
+                  {race.rosterNote && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {race.rosterNote}
+                    </p>
+                  )}
+                </section>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+        );
+      })()}
     </div>
   );
 }
