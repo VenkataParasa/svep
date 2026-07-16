@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Info, MapPin, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { setCiceroTextLocation } from "@/lib/cicero-location";
 
 async function getCiceroOfficials(location: string): Promise<CiceroOfficial[]> {
   const apiKey = process.env.CICERO_API_KEY;
@@ -13,14 +14,8 @@ async function getCiceroOfficials(location: string): Promise<CiceroOfficial[]> {
     throw new Error("Cicero API Key is not configured.");
   }
   
-  const isPostalCode = /^\d{5}(?:-\d{4})?$/.test(location.trim());
   const params = new URLSearchParams({ format: "json", key: apiKey, max: "200" });
-  if (isPostalCode) {
-    params.set("search_postal", location.trim());
-    params.set("search_country", "US");
-  } else {
-    params.set("search_loc", location.trim());
-  }
+  setCiceroTextLocation(params, location);
   const url = `https://app.cicerodata.com/v3.1/official?${params.toString()}`;
   
   // Next.js caches each URL separately, so repeated searches for the same ZIP

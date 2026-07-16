@@ -8,10 +8,10 @@ export default function LandingPage() {
   return (
     <>
       <Hero />
-      <StatsSection />
+      {/* <StatsSection /> */}
       <FeaturesGrid />
       <HowItWorks />
-      <CtaSection />
+      {/* <CtaSection /> */}
     </>
   );
 }

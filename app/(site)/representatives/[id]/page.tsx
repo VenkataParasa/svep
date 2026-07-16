@@ -9,6 +9,7 @@ import { SourceList } from "@/components/shared/source-list";
 import { PositionMethodology } from "@/components/shared/position-methodology";
 import { SourceCitation } from "@/components/shared/source-citation";
 import { SocialIcon } from "@/components/shared/social-icon";
+import { ExpandableBiography } from "@/components/shared/expandable-biography";
 import { LegislationCard } from "@/components/legislation/legislation-card";
 import { PublicDocumentsList } from "@/components/shared/public-documents-list";
 import { prisma as db } from "@/lib/prisma";
@@ -20,6 +21,10 @@ import type {
   PublicDocument,
 } from "@/lib/types";
 import { NOT_AVAILABLE } from "@/lib/constants";
+import {
+  representativeJurisdictionLabel,
+  representativeOfficeLabel,
+} from "@/lib/representative-office";
 import { getIssueById } from "@/data/issues";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +61,13 @@ export default async function RepresentativeProfilePage({
   });
 
   if (!representative) notFound();
+
+  const officeDetails = {
+    office: representative.office,
+    level: representative.level,
+    jurisdiction: representative.jurisdiction,
+    district: representative.district,
+  };
 
   const socialLinks = (() => {
     try {
@@ -110,7 +122,7 @@ export default async function RepresentativeProfilePage({
             {representative.name}
           </h1>
           <p className="mt-1 text-lg text-muted-foreground">
-            {representative.office}
+            {representativeOfficeLabel(officeDetails)}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <PartyBadge party={representative.party as unknown as Party} />
@@ -121,7 +133,7 @@ export default async function RepresentativeProfilePage({
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Landmark className="size-4" />
-            {representative.jurisdiction}
+            {representativeJurisdictionLabel(officeDetails)}
           </p>
         </div>
       </div>
@@ -142,16 +154,7 @@ export default async function RepresentativeProfilePage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {representative.nlpBioHtml ? (
-            <p
-              className="leading-relaxed text-foreground/90"
-              dangerouslySetInnerHTML={{ __html: representative.nlpBioHtml }}
-            />
-          ) : (
-            <p className="leading-relaxed text-foreground/90">
-              {representative.bio || NOT_AVAILABLE}
-            </p>
-          )}
+          <ExpandableBiography text={representative.bio || NOT_AVAILABLE} />
         </CardContent>
       </Card>
 
@@ -212,7 +215,7 @@ export default async function RepresentativeProfilePage({
 
       <Card className="mt-5 rounded-2xl border-border/80 shadow-sm">
         <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
+          <CardTitle>Contact & Social Information</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4 text-sm">
           {representative.contactWebsite && (

@@ -56,7 +56,10 @@ async function wikipediaQuery(params: URLSearchParams) {
 }
 
 /** Resolve only a confidently named Wikipedia biography to avoid wrong portraits. */
-export async function findWikipediaPortrait(name: string) {
+export async function findWikipediaPortrait(
+  name: string,
+  requiredContext: string[] = [],
+) {
   const summaryResponse = await fetch(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name.replace(/ /g, "_"))}`,
     {
@@ -70,6 +73,7 @@ export async function findWikipediaPortrait(name: string) {
       originalimage?: { source?: string };
       thumbnail?: { source?: string };
       content_urls?: { desktop?: { page?: string } };
+      description?: string;
     };
     const summaryPhoto = photoFromPage({
       title: summary.title,
@@ -77,14 +81,24 @@ export async function findWikipediaPortrait(name: string) {
       original: summary.originalimage,
       thumbnail: summary.thumbnail,
     });
+    const hasRequiredContext =
+      requiredContext.length === 0 ||
+      requiredContext.some((term) =>
+        normalizedName(summary.description ?? "").includes(normalizedName(term)),
+      );
     if (
       summaryPhoto &&
+      hasRequiredContext &&
       (normalizedName(summaryPhoto.pageTitle) === normalizedName(name) ||
         normalizedName(summaryPhoto.pageTitle).startsWith(`${normalizedName(name)} `))
     ) {
       return summaryPhoto;
     }
   }
+
+  // For officials, an exact name alone is insufficient: people in sports,
+  // entertainment, or business frequently share the same name.
+  if (requiredContext.length > 0) return null;
 
   const directPages = await wikipediaQuery(
     new URLSearchParams({ titles: name, redirects: "1" }),
