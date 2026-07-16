@@ -2,17 +2,26 @@
 
 import Link from "next/link";
 import {
-  BookOpenCheck,
-  FileClock,
   HelpCircle,
   ListChecks,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function QuickActions({ zip }: { zip: string }) {
+export function QuickActions({
+  zip,
+  address,
+}: {
+  zip: string;
+  address?: string | null;
+}) {
+  const officialsAddress = address?.trim() || zip;
   const actions = [
-    { href: `/officials?zip=${zip}`, label: "Elected Officials", icon: Users },
+    {
+      href: `/officials-new?address=${encodeURIComponent(officialsAddress)}`,
+      label: "Elected Officials",
+      icon: Users,
+    },
     { href: "/issues", label: "Browse All Issues", icon: ListChecks },
     // { href: "/sources", label: "Source Transparency", icon: BookOpenCheck },
     // { href: "/audit-trail", label: "View Audit Trail", icon: FileClock },

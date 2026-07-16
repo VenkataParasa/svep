@@ -20,8 +20,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/jurisdictions", label: "Jurisdictions" },
-  { href: "/dashboard", label: "Civic Dashboard" },
+  { href: "/dashboard", label: "Jurisdiction Dashboard" },
   { href: "/officials-new", label: "Elected Officials" },
   { href: "/issues", label: "Civic Issues" },
 ];
@@ -48,8 +47,8 @@ export function SiteHeader() {
     if (!savedLocation) return href;
     if (href === "/jurisdictions")
       return `${href}?location=${encodeURIComponent(savedLocation)}`;
-    if (href === "/dashboard" && zip)
-      return `${href}?zip=${encodeURIComponent(zip)}`;
+    if (href === "/dashboard")
+      return `${href}?location=${encodeURIComponent(savedLocation)}`;
     if (href === "/officials-new")
       return `${href}?address=${encodeURIComponent(savedLocation)}`;
     if (href === "/issues")

@@ -3,21 +3,18 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Users } from "lucide-react";
+import { Users, Vote } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { LocationCard } from "@/components/dashboard/location-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RepresentativeListItem } from "@/components/representatives/representative-list-item";
+import { CandidateListItem } from "@/components/candidates/candidate-list-item";
 import { ZipSearchForm } from "@/components/landing/zip-search-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useZipContextStore, isValidZip } from "@/store/zip-context-store";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useZipContextStore } from "@/store/zip-context-store";
+import { getRacesForZip, isSupportedCandidateZip } from "@/data/candidates";
+import { formatDate } from "@/lib/utils";
 import type { GovLevel, Party, ZipJurisdiction } from "@/lib/types";
 
 type OfficeLevelFilter = GovLevel | "all";
@@ -68,20 +65,40 @@ function partyFromCicero(value: string): Party {
   if (party.includes("democrat")) return "Democratic";
   if (party.includes("republican")) return "Republican";
   if (party.includes("independent")) return "Independent";
-  if (party.includes("nonpartisan") || party.includes("unknown")) return "Nonpartisan";
+  if (party.includes("nonpartisan") || party.includes("unknown"))
+    return "Nonpartisan";
   return "Other";
 }
 
 function districtLabel(districts: DynamicDistrict[], type: string) {
-  return districts.find((district) => district.type === type)?.label ?? "Not returned by Cicero";
+  return (
+    districts.find((district) => district.type === type)?.label ??
+    "Not returned by Cicero"
+  );
 }
 
 function districtTarget(
   districts: DynamicDistrict[],
-  predicate: (district: DynamicDistrict) => boolean,
+  predicate: (district: DynamicDistrict) => boolean
 ) {
   const district = districts.find(predicate);
   return district ? { label: district.label } : undefined;
+}
+
+function officeWithJurisdiction(
+  title: string,
+  district: DynamicDistrict,
+): string {
+  const districtId = district.districtId.trim();
+  const label = district.label.trim();
+  const isAtLarge = /at[ -]?large/i.test(`${districtId} ${label}`);
+
+  if (district.type === "LOCAL" && isAtLarge) {
+    return `${title} - At Large`;
+  }
+
+  const jurisdiction = label || districtId;
+  return jurisdiction ? `${title} - ${jurisdiction}` : title;
 }
 
 function getOfficeRank(level: GovLevel, office: string): number {
@@ -127,15 +144,12 @@ function getOfficeRank(level: GovLevel, office: string): number {
       "state representative",
       "representative",
     ],
-    federal: [
-      "president",
-      "vice president",
-      "senator",
-      "representative",
-    ],
+    federal: ["president", "vice president", "senator", "representative"],
   };
 
-  const rank = hierarchy[level].findIndex((officeName) => title.includes(officeName));
+  const rank = hierarchy[level].findIndex((officeName) =>
+    title.includes(officeName)
+  );
   return rank === -1 ? hierarchy[level].length : rank;
 }
 
@@ -147,7 +161,13 @@ export function DashboardContent() {
     location: storedLocation,
     setResolvedLocation,
   } = useZipContextStore();
-  const queryZip = searchParams.get("zip");
+  const queryLocation = searchParams.get("location")?.trim() || "";
+  const legacyZip = searchParams.get("zip")?.trim() || "";
+  const latitude = searchParams.get("lat")?.trim() || "";
+  const longitude = searchParams.get("lon")?.trim() || "";
+  const hasCoordinates = Boolean(latitude && longitude);
+  const locationInput =
+    queryLocation || legacyZip || storedLocation || storedZip || "";
   const [representatives, setRepresentatives] = React.useState<
     CurrentOfficial[]
   >([]);
@@ -156,32 +176,35 @@ export function DashboardContent() {
   const [representativesError, setRepresentativesError] = React.useState<
     string | null
   >(null);
-  const [jurisdiction, setJurisdiction] = React.useState<ZipJurisdiction | null>(null);
+  const [jurisdiction, setJurisdiction] =
+    React.useState<ZipJurisdiction | null>(null);
   const [officeLevelFilter, setOfficeLevelFilter] =
     React.useState<OfficeLevelFilter>("all");
+  const [candidateOfficeFilter, setCandidateOfficeFilter] =
+    React.useState<string>("all");
 
   React.useEffect(() => {
-    if (
-      queryZip &&
-      isValidZip(queryZip) &&
-      (queryZip !== storedZip || !storedLocation)
-    ) {
-      setResolvedLocation(queryZip, queryZip);
-    } else if (!queryZip && storedZip && isValidZip(storedZip)) {
-      router.replace(`/dashboard?zip=${storedZip}`);
+    if (!queryLocation && !legacyZip && !hasCoordinates && locationInput) {
+      router.replace(
+        `/dashboard?location=${encodeURIComponent(locationInput)}`
+      );
     }
-  }, [queryZip, storedZip, storedLocation, setResolvedLocation, router]);
-
-  const activeZip = queryZip && isValidZip(queryZip) ? queryZip : null;
+  }, [queryLocation, legacyZip, hasCoordinates, locationInput, router]);
 
   React.useEffect(() => {
-    if (!activeZip) return;
+    if (!locationInput && !hasCoordinates) return;
     const controller = new AbortController();
     setRepresentativesLoading(true);
     setRepresentativesError(null);
 
-    const locationQuery = storedLocation || activeZip;
-    fetch(`/api/legislative-districts?location=${encodeURIComponent(locationQuery)}`, {
+    const lookupParams = new URLSearchParams();
+    if (hasCoordinates) {
+      lookupParams.set("lat", latitude);
+      lookupParams.set("lon", longitude);
+    } else {
+      lookupParams.set("location", locationInput);
+    }
+    fetch(`/api/legislative-districts?${lookupParams.toString()}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -197,19 +220,27 @@ export function DashboardContent() {
             const key = official.id ?? `${official.name}-${official.title}`;
             if (seenOfficials.has(key)) return [];
             seenOfficials.add(key);
-            return [{
+            return [
+              {
               id: key,
               name: official.name,
-              office: official.title,
-              level: levelFromDistrict(district.type),
-              party: partyFromCicero(official.party),
-              photoUrl: official.photoUrl,
-            }];
-          }),
+              office: officeWithJurisdiction(official.title, district),
+                level: levelFromDistrict(district.type),
+                party: partyFromCicero(official.party),
+                photoUrl: official.photoUrl,
+              },
+            ];
+          })
+        );
+        const resolvedZip =
+          location.match.postalCode.match(/\b\d{5}\b/)?.[0] ?? null;
+        setResolvedLocation(
+          queryLocation || legacyZip || location.match.formattedAddress,
+          resolvedZip
         );
         setRepresentatives(officials);
         setJurisdiction({
-          zip: location.match.postalCode.match(/\b\d{5}\b/)?.[0] ?? activeZip,
+          zip: resolvedZip ?? legacyZip.match(/\b\d{5}\b/)?.[0] ?? "",
           city: location.match.city || "Location returned by Cicero",
           county: location.match.county || "Not returned by Cicero",
           neighborhood: location.match.formattedAddress,
@@ -217,10 +248,13 @@ export function DashboardContent() {
             location.districts.find(
               (district) =>
                 district.type === "LOCAL" &&
-                district.districtId.toLowerCase() !== "at large",
+                district.districtId.toLowerCase() !== "at large"
             )?.label ?? districtLabel(location.districts, "LOCAL"),
           councilDistrictConfidence: "verified",
-          congressionalDistrict: districtLabel(location.districts, "NATIONAL_LOWER"),
+          congressionalDistrict: districtLabel(
+            location.districts,
+            "NATIONAL_LOWER"
+          ),
           congressionalConfidence: "verified",
           stateSenateDistrict: districtLabel(location.districts, "STATE_UPPER"),
           stateSenateConfidence: "verified",
@@ -238,26 +272,26 @@ export function DashboardContent() {
               (district) =>
                 district.type === "LOCAL_EXEC" ||
                 (district.type === "LOCAL" &&
-                  district.districtId.toLowerCase() === "at large"),
+                  district.districtId.toLowerCase() === "at large")
             ),
             county: { label: location.match.county || "County" },
             council: districtTarget(
               location.districts,
               (district) =>
                 district.type === "LOCAL" &&
-                district.districtId.toLowerCase() !== "at large",
+                district.districtId.toLowerCase() !== "at large"
             ),
             stateHouse: districtTarget(
               location.districts,
-              (district) => district.type === "STATE_LOWER",
+              (district) => district.type === "STATE_LOWER"
             ),
             stateSenate: districtTarget(
               location.districts,
-              (district) => district.type === "STATE_UPPER",
+              (district) => district.type === "STATE_UPPER"
             ),
             congressional: districtTarget(
               location.districts,
-              (district) => district.type === "NATIONAL_LOWER",
+              (district) => district.type === "NATIONAL_LOWER"
             ),
           },
         });
@@ -274,9 +308,17 @@ export function DashboardContent() {
       });
 
     return () => controller.abort();
-  }, [activeZip, storedLocation]);
+  }, [
+    hasCoordinates,
+    latitude,
+    legacyZip,
+    locationInput,
+    longitude,
+    queryLocation,
+    setResolvedLocation,
+  ]);
 
-  if (!activeZip) {
+  if (!locationInput && !hasCoordinates) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6 lg:px-8">
         <h1 className="text-2xl font-semibold">
@@ -312,10 +354,11 @@ export function DashboardContent() {
       >
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Your Civic Dashboard
+            Your Jurisdiction Dashboard
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Personalized for {jurisdiction?.neighborhood ?? storedLocation ?? activeZip}
+            Personalized for{" "}
+            {jurisdiction?.neighborhood ?? locationInput ?? "your location"}
           </p>
         </div>
       </motion.div>
@@ -324,14 +367,22 @@ export function DashboardContent() {
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Search another location</h2>
           <p className="text-xs text-muted-foreground">
-            Enter any U.S. street address, ZIP code, or ZIP+4 to update your dashboard.
+            Enter any U.S. street address, ZIP code, or ZIP+4 to update your
+            dashboard.
           </p>
         </div>
         <ZipSearchForm destination="dashboard" />
       </div>
 
       <div className="mt-6">
-        <QuickActions zip={jurisdiction?.zip ?? activeZip} />
+        <QuickActions
+          zip={jurisdiction?.zip ?? storedZip ?? ""}
+          address={
+            hasCoordinates
+              ? jurisdiction?.neighborhood ?? storedLocation
+              : locationInput
+          }
+        />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -350,22 +401,19 @@ export function DashboardContent() {
                 <Users className="size-4.5 text-primary" />
                 Your Representatives
               </CardTitle>
-              <Select
+              <Tabs
                 value={officeLevelFilter}
                 onValueChange={(value) =>
                   setOfficeLevelFilter((value || "all") as OfficeLevelFilter)
                 }
               >
-                <SelectTrigger size="sm" className="w-32" aria-label="Filter representatives by level">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="city">Local</SelectItem>
-                  <SelectItem value="state">State</SelectItem>
-                  <SelectItem value="federal">Federal</SelectItem>
-                </SelectContent>
-              </Select>
+                <TabsList aria-label="Filter representatives by level">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="city">Local</TabsTrigger>
+                  <TabsTrigger value="state">State</TabsTrigger>
+                  <TabsTrigger value="federal">Federal</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </CardHeader>
           <CardContent>
@@ -384,12 +432,20 @@ export function DashboardContent() {
                       const rankDifference =
                         getOfficeRank(level, representativeA.office) -
                         getOfficeRank(level, representativeB.office);
-                      return rankDifference || representativeA.office.localeCompare(representativeB.office);
+                      return (
+                        rankDifference ||
+                        representativeA.office.localeCompare(
+                          representativeB.office
+                        )
+                      );
                     });
                   if (levelRepresentatives.length === 0) return null;
 
                   return (
-                    <section key={level} aria-labelledby={`representative-level-${level}`}>
+                    <section
+                      key={level}
+                      aria-labelledby={`representative-level-${level}`}
+                    >
                       <div className="mb-2.5 flex items-center gap-3">
                         <h3
                           id={`representative-level-${level}`}
@@ -407,6 +463,7 @@ export function DashboardContent() {
                           <RepresentativeListItem
                             key={representative.id}
                             representative={representative}
+                            officeAsTag
                           />
                         ))}
                       </div>
@@ -416,13 +473,101 @@ export function DashboardContent() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No {officeLevelFilter === "all" ? "current" : officeLevelFilter === "city" ? "local" : officeLevelFilter} officeholders were returned for this ZIP code.
+                No{" "}
+                {officeLevelFilter === "all"
+                  ? "current"
+                  : officeLevelFilter === "city"
+                  ? "local"
+                  : officeLevelFilter}{" "}
+                officeholders were returned for this ZIP code.
               </p>
             )}
           </CardContent>
         </Card>
       </div>
 
+      {isSupportedCandidateZip(jurisdiction?.zip) && (() => {
+        const racesForZip = getRacesForZip(jurisdiction!.zip);
+        const candidateOfficeOptions = Array.from(
+          new Set(racesForZip.map(({ race }) => race.officeTitle))
+        );
+        const visibleRaces = racesForZip.filter(
+          ({ race }) =>
+            candidateOfficeFilter === "all" ||
+            race.officeTitle === candidateOfficeFilter
+        );
+        return (
+        <div className="mt-8">
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Vote className="size-4.5 text-primary" />
+                  2026 Candidates on Your Ballot
+                </CardTitle>
+                <Tabs
+                  value={candidateOfficeFilter}
+                  onValueChange={(value) =>
+                    setCandidateOfficeFilter(value || "all")
+                  }
+                >
+                  <TabsList aria-label="Filter candidates by office">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    {candidateOfficeOptions.map((officeTitle) => (
+                      <TabsTrigger key={officeTitle} value={officeTitle}>
+                        {officeTitle}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Active, currently-filed candidates for the offices up for
+                election in your jurisdiction. Michigan&apos;s primary is
+                August 4, 2026; the general election is November 3, 2026.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {visibleRaces.map(({ race, candidates }) => (
+                <section key={race.id} aria-labelledby={`race-${race.id}`}>
+                  <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3 id={`race-${race.id}`} className="text-sm font-semibold">
+                      {race.officeTitle}
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        — {race.jurisdiction}
+                      </span>
+                    </h3>
+                    <span className="text-xs text-muted-foreground">
+                      Primary {formatDate(race.primaryDate)} · General{" "}
+                      {formatDate(race.generalDate)}
+                    </span>
+                  </div>
+                  <p className="mb-2.5 text-xs text-muted-foreground">
+                    {race.description}
+                  </p>
+                  {candidates.length > 0 ? (
+                    <div className="space-y-2">
+                      {candidates.map((candidate) => (
+                        <CandidateListItem key={candidate.id} candidate={candidate} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No active candidates on file for this race.
+                    </p>
+                  )}
+                  {race.rosterNote && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {race.rosterNote}
+                    </p>
+                  )}
+                </section>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+        );
+      })()}
     </div>
   );
 }

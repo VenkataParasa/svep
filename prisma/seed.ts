@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { sources } from '../data/sources';
 import { issues } from '../data/issues';
+import { representativeIssuePositions } from '../data/representative-issue-positions';
 
 const prisma = new PrismaClient();
 
@@ -91,6 +92,50 @@ async function main() {
         }
       }
     });
+  }
+
+  // 5. Seed sourced issue positions for current officeholders. Representative
+  // rows are created dynamically from live Cicero lookups, so ids aren't
+  // known ahead of time — match by name instead, and apply to every
+  // matching row so the data attaches regardless of which Cicero-derived id
+  // is currently live.
+  for (const entry of representativeIssuePositions) {
+    const matchedReps = await prisma.representative.findMany({
+      where: { name: { in: entry.matchNames } },
+    });
+    const issueIds = entry.positions.map((position) => position.issueId);
+    const fields = entry.positions.map((position) => `issuePosition_${position.issueId}`);
+
+    for (const rep of matchedReps) {
+      await prisma.issuePosition.deleteMany({
+        where: { representativeId: rep.id, issueId: { in: issueIds } },
+      });
+      await prisma.fieldMetadata.deleteMany({
+        where: { representativeId: rep.id, field: { in: fields } },
+      });
+
+      for (const position of entry.positions) {
+        await prisma.issuePosition.create({
+          data: {
+            issueId: position.issueId,
+            summary: position.summary,
+            representativeId: rep.id,
+          },
+        });
+        await prisma.fieldMetadata.create({
+          data: {
+            entityType: 'Representative',
+            entityId: rep.id,
+            field: `issuePosition_${position.issueId}`,
+            confidenceScore: position.confidenceScore,
+            version: 'v1.6.2',
+            lastUpdated: new Date(position.lastUpdated),
+            sourceId: position.sourceId,
+            representativeId: rep.id,
+          },
+        });
+      }
+    }
   }
 
   console.log('Seeding finished.');

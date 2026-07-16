@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { ciceroBiography, ciceroSocialLinks } from "@/lib/cicero-official";
+import { isCiceroPostalCode, setCiceroTextLocation } from "@/lib/cicero-location";
 import {
   findWikipediaPortrait,
   wikipediaSourceId,
   type WikipediaPhoto,
 } from "@/lib/wikipedia-photo";
+import {
+  findOfficialGovernmentPortrait,
+  officialGovernmentPhotoSourceId,
+  type OfficialGovernmentPhoto,
+} from "@/lib/official-government-photo";
 
 const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
+const LOCATION_CACHE_VERSION = "verified-official-photos-v2";
 
 type CiceroDistrict = {
   id?: number;
@@ -60,6 +67,7 @@ type CiceroOfficial = {
       id?: number;
       district_type?: string;
       district_id?: string;
+      label?: string;
     };
   };
 };
@@ -106,14 +114,14 @@ export async function GET(request: NextRequest) {
 
   const precision = hasCoordinates
     ? "coordinates"
-    : /^\d{5}(?:-?\d{4})?$/.test(location!)
+    : isCiceroPostalCode(location!)
       ? "postal"
       : "address";
   const normalizedInput = hasCoordinates
     ? `${Number(lat).toFixed(6)},${Number(lon).toFixed(6)}`
     : location!.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const cacheKey = createHash("sha256")
-    .update(`${precision}:${normalizedInput}`)
+    .update(`${LOCATION_CACHE_VERSION}:${precision}:${normalizedInput}`)
     .digest("hex");
 
   const cachedLookup = await prisma.locationLookup
@@ -148,12 +156,8 @@ export async function GET(request: NextRequest) {
   if (hasCoordinates) {
     params.set("lat", lat!);
     params.set("lon", lon!);
-  } else if (/^\d{5}(?:-?\d{4})?$/.test(location!)) {
-    params.set("search_postal", location!);
-    params.set("search_country", "US");
   } else {
-    params.set("search_loc", location!);
-    params.set("search_country", "US");
+    setCiceroTextLocation(params, location!);
   }
 
   try {
@@ -236,31 +240,36 @@ export async function GET(request: NextRequest) {
       ]),
     );
 
-    const stateOfficialNames = [
-      ...new Set(
-        electedOfficials
-          .filter((official) =>
-            official.office?.district?.district_type?.startsWith("STATE"),
-          )
-          .map((official) =>
-            `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim(),
-          )
-          .filter(Boolean),
-      ),
-    ].filter((name) => {
-      const matchingOfficial = electedOfficials.find(
-        (official) =>
-          `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim() === name,
-      );
-      const id = matchingOfficial ? representativeId(matchingOfficial) : null;
-      return !(
-        id && storedPhotoById.get(id)?.includes("upload.wikimedia.org")
-      );
-    });
-    const wikipediaPhotos = new Map<string, WikipediaPhoto>();
-    for (const name of stateOfficialNames) {
+    const governmentPhotos = new Map<string, OfficialGovernmentPhoto>();
+    for (const official of electedOfficials) {
+      if (!official.office?.district?.district_type?.startsWith("STATE")) continue;
+      const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
+      if (!name) continue;
       try {
-        const portrait = await findWikipediaPortrait(name);
+        const portrait = await findOfficialGovernmentPortrait(
+          name,
+          official.urls ?? [],
+        );
+        if (portrait) governmentPhotos.set(name, portrait);
+      } catch {
+        // A portrait lookup must never prevent Cicero jurisdiction results.
+      }
+    }
+
+    const wikipediaPhotos = new Map<string, WikipediaPhoto>();
+    for (const official of electedOfficials) {
+      if (!official.office?.district?.district_type?.startsWith("STATE")) continue;
+      const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
+      if (!name || governmentPhotos.has(name)) continue;
+      try {
+        const portrait = await findWikipediaPortrait(name, [
+          "politician",
+          "representative",
+          "senator",
+          "governor",
+          "attorney general",
+          "secretary of state",
+        ]);
         if (portrait) wikipediaPhotos.set(name, portrait);
       } catch {
         // A portrait lookup must never prevent Cicero jurisdiction results.
@@ -271,14 +280,23 @@ export async function GET(request: NextRequest) {
       const id = representativeId(official);
       const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
       const wikipediaPhoto = wikipediaPhotos.get(name) ?? null;
+      const governmentPhoto = governmentPhotos.get(name) ?? null;
       const ciceroPhotoUrl = official.photo_origin_url?.trim() || null;
+      const isStateOfficial = official.office?.district?.district_type?.startsWith("STATE");
+      const storedPhoto = id ? storedPhotoById.get(id) : null;
+      const reusableStoredPhoto =
+        isStateOfficial && storedPhoto?.includes("upload.wikimedia.org")
+          ? null
+          : storedPhoto;
       return {
         official,
         id,
         wikipediaPhoto,
+        governmentPhoto,
         photoUrl:
+          governmentPhoto?.imageUrl ||
           wikipediaPhoto?.imageUrl ||
-          (id ? storedPhotoById.get(id) : null) ||
+          reusableStoredPhoto ||
           ciceroPhotoUrl ||
           null,
       };
@@ -305,16 +323,41 @@ export async function GET(request: NextRequest) {
       ),
     );
 
+    await Promise.allSettled(
+      [...governmentPhotos.entries()].map(([name, portrait]) =>
+        prisma.source.upsert({
+          where: { id: officialGovernmentPhotoSourceId(name) },
+          update: {
+            name: `Official government profile — ${portrait.pageTitle}`,
+            url: portrait.pageUrl,
+            lastUpdated: new Date(),
+          },
+          create: {
+            id: officialGovernmentPhotoSourceId(name),
+            name: `Official government profile — ${portrait.pageTitle}`,
+            type: "government",
+            url: portrait.pageUrl,
+            verificationStatus: "verified",
+            notes: "Official government profile page used as the portrait source.",
+          },
+        }),
+      ),
+    );
+
     // Persist current Cicero records without allowing a database failure to
     // prevent the live jurisdiction result from being displayed.
     await Promise.allSettled(
-      persistedOfficials.flatMap(({ official, id, photoUrl, wikipediaPhoto }) => {
+      persistedOfficials.flatMap(({ official, id, photoUrl, wikipediaPhoto, governmentPhoto }) => {
         if (!id) return [];
         const name = `${official.first_name ?? ""} ${official.last_name ?? ""}`.trim();
         const district = official.office?.district;
         const biography = ciceroBiography(official.notes);
         const socialLinks = ciceroSocialLinks(official.identifiers);
-        const sourceId = wikipediaPhoto ? wikipediaSourceId(name) : null;
+        const sourceId = wikipediaPhoto
+          ? wikipediaSourceId(name)
+          : governmentPhoto
+            ? officialGovernmentPhotoSourceId(name)
+            : null;
         return [
           prisma.representative.upsert({
             where: { id },
@@ -323,9 +366,10 @@ export async function GET(request: NextRequest) {
               office: official.office?.title ?? "Elected official",
               level: governmentLevel(district?.district_type),
               party: normalizedParty(official.party),
-              jurisdiction: district?.district_id ?? "",
+              jurisdiction: district?.label ?? district?.district_id ?? "",
               district: district?.district_id ?? null,
-              ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
+              photoUrl,
+              isDemoPhoto: !photoUrl,
               contactWebsite: official.urls?.[0] ?? null,
               contactPhone: official.addresses?.[0]?.phone_1 ?? null,
               contactEmail: official.email_addresses?.[0] ?? null,
@@ -340,7 +384,7 @@ export async function GET(request: NextRequest) {
               office: official.office?.title ?? "Elected official",
               level: governmentLevel(district?.district_type),
               party: normalizedParty(official.party),
-              jurisdiction: district?.district_id ?? "",
+              jurisdiction: district?.label ?? district?.district_id ?? "",
               district: district?.district_id ?? null,
               photoUrl,
               isDemoPhoto: !photoUrl,

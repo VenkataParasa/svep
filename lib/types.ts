@@ -135,7 +135,8 @@ export type IssueCategory =
   | "Environment"
   | "Healthcare"
   | "Parks & Recreation"
-  | "Taxation";
+  | "Taxation"
+  | "Government Accountability & Ethics";
 
 export interface RelatedDepartment {
   name: string;

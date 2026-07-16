@@ -31,7 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PersonAvatar } from "@/components/shared/person-avatar";
-import { isValidZip, useZipContextStore } from "@/store/zip-context-store";
+import { useZipContextStore } from "@/store/zip-context-store";
 
 type District = {
   mapId: number | null;
@@ -234,8 +234,6 @@ export function JurisdictionExplorer() {
     );
   }
 
-  const dashboardZip = result?.match.postalCode.match(/\b\d{5}\b/)?.[0];
-
   return (
     <div className="space-y-8">
       <Card className="rounded-2xl border-border/80 shadow-sm">
@@ -337,10 +335,16 @@ export function JurisdictionExplorer() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {dashboardZip && isValidZip(dashboardZip) && (
+                {result.match.formattedAddress && (
                   <Button
                     variant="outline"
-                    render={<Link href={`/dashboard?zip=${dashboardZip}`} />}
+                    render={
+                      <Link
+                        href={`/dashboard?location=${encodeURIComponent(
+                          result.match.formattedAddress,
+                        )}`}
+                      />
+                    }
                   >
                     Open civic dashboard
                   </Button>

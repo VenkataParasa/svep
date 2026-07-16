@@ -4,7 +4,8 @@ import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 
 export const metadata: Metadata = {
-  title: "Your Civic Dashboard | City of Detroit Voter Education Platform",
+  title:
+    "Your Jurisdiction Dashboard | City of Detroit Voter Education Platform",
 };
 
 export default function DashboardPage() {
