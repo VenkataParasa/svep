@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./prisma/dev.db"]
   },
-  output: "standalone",
+  output: process.env.VERCEL ? undefined : "standalone",
   /* config options here */
 };
 
