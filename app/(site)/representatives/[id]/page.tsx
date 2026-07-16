@@ -1,8 +1,25 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ExternalLink, Landmark, Mail, Phone, FileStack } from "lucide-react";
+import {
+  BadgeCheck,
+  BriefcaseBusiness,
+  ExternalLink,
+  FileStack,
+  FileText,
+  Globe2,
+  Landmark,
+  Mail,
+  MapPin,
+  Phone,
+  Scale,
+  Share2,
+  ShieldCheck,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { PartyBadge } from "@/components/shared/party-badge";
 import { SourceList } from "@/components/shared/source-list";
@@ -21,6 +38,7 @@ import type {
   PublicDocument,
 } from "@/lib/types";
 import { NOT_AVAILABLE } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
 import {
   representativeJurisdictionLabel,
   representativeOfficeLabel,
@@ -34,6 +52,30 @@ const levelLabel: Record<string, string> = {
   state: "State",
   city: "City",
 };
+
+function ProfileDetail({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-0.5 break-words text-sm font-medium leading-snug">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default async function RepresentativeProfilePage({
   params,
@@ -98,8 +140,21 @@ export default async function RepresentativeProfilePage({
     new Map(allDocuments.map((doc) => [doc.id, doc])).values()
   );
 
+  const address = [
+    representative.addressLine1,
+    representative.addressLine2,
+    [representative.city, representative.state, representative.zipCode]
+      .filter(Boolean)
+      .join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const lastUpdated = representative.sources
+    .map((source) => source.lastUpdated)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Breadcrumbs
         items={[
           { label: "Officeholders", href: "/leaders" },
@@ -107,163 +162,242 @@ export default async function RepresentativeProfilePage({
         ]}
       />
 
-      <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row">
-        <PersonAvatar
-          name={representative.name}
-          photoUrl={
-            representative.photoUrl
-              ? `/api/representative-photo/${representative.id}`
-              : undefined
-          }
-          size="xl"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {representative.name}
-          </h1>
-          <p className="mt-1 text-lg text-muted-foreground">
-            {representativeOfficeLabel(officeDetails)}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <PartyBadge party={representative.party as unknown as Party} />
-            <span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              {levelLabel[representative.level]} Level
-            </span>
-            {/* <ConfidenceBadge confidence={representative.confidence as unknown as Confidence} note={representative.demoDataNote || undefined} /> */}
-          </div>
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Landmark className="size-4" />
-            {representativeJurisdictionLabel(officeDetails)}
-          </p>
-        </div>
-      </div>
-
-      <Card className="mt-8 rounded-2xl border-border/80 shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            Biography
-            {bioMeta && (
-              <SourceCitation
-                field="Biography"
-                sourceName={bioMeta.source.name}
-                sourceUrl={bioMeta.source.url}
-                confidenceScore={bioMeta.confidenceScore}
-                lastUpdated={bioMeta.lastUpdated}
-              />
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ExpandableBiography text={representative.bio || NOT_AVAILABLE} />
-        </CardContent>
-      </Card>
-
-      <Card className="mt-5 rounded-2xl border-border/80 shadow-sm">
-        <CardHeader>
-          <CardTitle>Issue Positions</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Only officially published positions are shown.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {representative.issuePositions.length === 0 && (
-            <p className="text-sm text-muted-foreground">{NOT_AVAILABLE}</p>
-          )}
-          {representative.issuePositions.map((position) => {
-            const issue = getIssueById(position.issueId);
-            // In a real app we'd map this to a specific metadata record for this issue position.
-            // For now, we'll pick the first source as a generic citation demo if a specific one isn't found.
-            const positionMeta = representative.metadata.find(
-              (m) => m.field === `issuePosition_${position.issueId}`
-            );
-            const fallbackSource = representative.sources[0];
-
-            return (
-              <div
-                key={position.issueId}
-                className="border-l-2 border-primary/40 pl-4"
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)_320px] xl:grid-cols-[300px_minmax(0,1fr)_340px]">
+        <Card className="overflow-hidden rounded-2xl border-border/80 shadow-sm lg:sticky lg:top-24">
+          <CardContent className="flex flex-col items-center px-6 pt-2 text-center">
+            <PersonAvatar
+              name={representative.name}
+              photoUrl={
+                representative.photoUrl
+                  ? `/api/representative-photo/${representative.id}`
+                  : undefined
+              }
+              size="xl"
+              className="size-44 rounded-2xl sm:size-52 [&_[data-slot=avatar-fallback]]:rounded-2xl [&_[data-slot=avatar-image]]:rounded-2xl"
+            />
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight text-primary">
+              {representative.name}
+            </h1>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <PartyBadge party={representative.party as unknown as Party} />
+              <Badge
+                variant="outline"
+                className="gap-1 border-primary/25 bg-primary/5 text-primary"
               >
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={issue ? `/issues/${issue.slug}` : "/issues"}
-                    className="text-sm font-semibold text-primary hover:underline"
-                  >
-                    {issue?.title ?? position.issueId}
-                  </Link>
-                  <SourceCitation
-                    field={`Issue Position: ${
-                      issue?.title ?? position.issueId
-                    }`}
-                    sourceName={
-                      positionMeta?.source.name || fallbackSource?.name
-                    }
-                    sourceUrl={positionMeta?.source.url || fallbackSource?.url}
-                    confidenceScore={positionMeta?.confidenceScore || 90}
-                    lastUpdated={
-                      positionMeta?.lastUpdated || fallbackSource?.lastUpdated
-                    }
-                  />
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {position.summary}
-                </p>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+                <BadgeCheck className="size-3.5" /> Current officeholder
+              </Badge>
+            </div>
+            <div className="mt-7 w-full space-y-5 border-t border-border pt-6 text-left">
+              <ProfileDetail
+                icon={BriefcaseBusiness}
+                label="Office"
+                value={representativeOfficeLabel(officeDetails)}
+              />
+              <ProfileDetail
+                icon={Landmark}
+                label="Jurisdiction"
+                value={representativeJurisdictionLabel(officeDetails)}
+              />
+              <ProfileDetail
+                icon={MapPin}
+                label="Government level"
+                value={`${
+                  levelLabel[representative.level] ?? representative.level
+                } level`}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="mt-5 rounded-2xl border-border/80 shadow-sm">
-        <CardHeader>
-          <CardTitle>Contact & Social Information</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 text-sm">
-          {representative.contactWebsite && (
-            <a
-              href={representative.contactWebsite}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-medium text-primary hover:underline"
-            >
-              Official Website <ExternalLink className="size-3.5" />
-            </a>
-          )}
-          {representative.contactPhone && (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Phone className="size-4" />
-              {representative.contactPhone}
-            </span>
-          )}
-          {representative.contactEmail && (
-            <a
-              href={`mailto:${representative.contactEmail}`}
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-primary"
-            >
-              <Mail className="size-4" />
-              {representative.contactEmail}
-            </a>
-          )}
-          {socialLinks.map((social) => (
-            <a
-              key={`${social.label}-${social.url}`}
-              href={social.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={social.label}
-              title={social.label}
-              className="inline-flex size-9 items-center justify-center rounded-full border border-border text-primary transition-colors hover:border-primary/40 hover:bg-primary/10"
-            >
-              <SocialIcon platform={social.label} />
-            </a>
-          ))}
-          {!representative.contactWebsite &&
-            !representative.contactPhone &&
-            !representative.contactEmail &&
-            socialLinks.length === 0 && (
-              <span className="text-muted-foreground">{NOT_AVAILABLE}</span>
-            )}
-        </CardContent>
-      </Card>
+        <main className="space-y-5">
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <UserRound className="size-5" /> Biography
+                {bioMeta && (
+                  <SourceCitation
+                    field="Biography"
+                    sourceName={bioMeta.source.name}
+                    sourceUrl={bioMeta.source.url}
+                    confidenceScore={bioMeta.confidenceScore}
+                    lastUpdated={bioMeta.lastUpdated}
+                  />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExpandableBiography text={representative.bio || NOT_AVAILABLE} />
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <Scale className="size-5" /> Issue Positions
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Only officially published positions are shown.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {representative.issuePositions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{NOT_AVAILABLE}</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {representative.issuePositions.map((position) => {
+                    const issue = getIssueById(position.issueId);
+                    const positionMeta = representative.metadata.find(
+                      (m) => m.field === `issuePosition_${position.issueId}`
+                    );
+                    const fallbackSource = representative.sources[0];
+                    return (
+                      <div
+                        key={position.issueId}
+                        className="flex gap-3 py-4 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Landmark className="size-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={issue ? `/issues/${issue.slug}` : "/issues"}
+                              className="font-semibold text-primary hover:underline"
+                            >
+                              {issue?.title ?? position.issueId}
+                            </Link>
+                            <SourceCitation
+                              field={`Issue Position: ${
+                                issue?.title ?? position.issueId
+                              }`}
+                              sourceName={
+                                positionMeta?.source.name ||
+                                fallbackSource?.name
+                              }
+                              sourceUrl={
+                                positionMeta?.source.url || fallbackSource?.url
+                              }
+                              confidenceScore={
+                                positionMeta?.confidenceScore || 90
+                              }
+                              lastUpdated={
+                                positionMeta?.lastUpdated ||
+                                fallbackSource?.lastUpdated
+                              }
+                            />
+                          </div>
+                          <p className="mt-1 leading-6 text-muted-foreground">
+                            {position.summary}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+
+        <aside className="space-y-5">
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <UserRound className="size-5" /> Contact
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {representative.contactEmail && (
+                <ProfileDetail
+                  icon={Mail}
+                  label="Email"
+                  value={representative.contactEmail}
+                />
+              )}
+              {representative.contactPhone && (
+                <ProfileDetail
+                  icon={Phone}
+                  label="Phone"
+                  value={representative.contactPhone}
+                />
+              )}
+              {address && (
+                <ProfileDetail icon={MapPin} label="Address" value={address} />
+              )}
+              {!representative.contactEmail &&
+                !representative.contactPhone &&
+                !address && (
+                  <p className="text-sm text-muted-foreground">
+                    {NOT_AVAILABLE}
+                  </p>
+                )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <Globe2 className="size-5" /> Website
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {representative.contactWebsite ? (
+                <a
+                  href={representative.contactWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start justify-between gap-2 break-all text-sm font-medium text-primary hover:underline"
+                >
+                  <span>{representative.contactWebsite}</span>
+                  <ExternalLink className="mt-0.5 size-4 shrink-0" />
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground">{NOT_AVAILABLE}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <Share2 className="size-5" /> Social Media
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              {socialLinks.length > 0 ? (
+                socialLinks.map((social) => (
+                  <a
+                    key={`${social.label}-${social.url}`}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    title={social.label}
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-border text-primary transition-colors hover:border-primary/40 hover:bg-primary/10"
+                  >
+                    <SocialIcon platform={social.label} className="size-5" />
+                  </a>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">{NOT_AVAILABLE}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-primary">
+                <FileText className="size-5" /> Official Sources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SourceList
+                sources={representative.sources as unknown as Source[]}
+              />
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
 
       <PositionMethodology
         subjectName={representative.name}
@@ -313,15 +447,13 @@ export default async function RepresentativeProfilePage({
         </section>
       )}
 
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold">Sources</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Official references used to compile the information on this page.
-        </p>
-        <div className="mt-4">
-          <SourceList sources={representative.sources as unknown as Source[]} />
+      {/* <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-3">
+          <ShieldCheck className="size-5 shrink-0 text-primary" />
+          <p>Information is collected from linked public sources for voter education. Verify details through the official sources above.</p>
         </div>
-      </section>
+        {lastUpdated && <p className="shrink-0">Data updated {formatDate(lastUpdated.toISOString())}</p>}
+      </div> */}
     </div>
   );
 }
