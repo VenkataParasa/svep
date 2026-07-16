@@ -118,22 +118,26 @@ export async function getLiveIssues(): Promise<LiveIssueCategory[]> {
     
     // Fallback if no API key or if the real fetch yielded no results
     if (bills.length === 0) {
-       const dbLegislation = await db.legislation.findMany({
-         where: { issue: { slug: cat.slug } },
-         take: 6,
-         orderBy: { lastUpdated: "desc" },
-       });
-       
-       bills = dbLegislation.map((l) => ({
-         id: l.id,
-         title: l.title,
-         billNumber: l.billNumber,
-         status: l.status,
-         url: "#",
-         summary: l.summary,
-         updatedAt: l.lastUpdated.toISOString(),
-         source: "Platform legislative records",
-       }));
+      try {
+         const dbLegislation = await db.legislation.findMany({
+           where: { issue: { slug: cat.slug } },
+           take: 6,
+           orderBy: { lastUpdated: "desc" },
+         });
+         
+         bills = dbLegislation.map((l) => ({
+           id: l.id,
+           title: l.title,
+           billNumber: l.billNumber,
+           status: l.status,
+           url: "#",
+           summary: l.summary,
+           updatedAt: l.lastUpdated.toISOString(),
+           source: "Platform legislative records",
+         }));
+      } catch (e: unknown) {
+         console.error(`[Prisma Database Fallback] Error querying legislation for ${cat.slug}:`, e);
+      }
     }
 
     results.push({
