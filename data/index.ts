@@ -4,3 +4,4 @@ export * from "./issues";
 export * from "./audit-records";
 export * from "./metadata";
 export * from "./analytics";
+export * from "./candidates";

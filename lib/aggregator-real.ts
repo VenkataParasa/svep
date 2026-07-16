@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ciceroBiography, ciceroSocialLinks } from '@/lib/cicero-official';
+import { setCiceroTextLocation } from '@/lib/cicero-location';
 
 // ==========================================
 // CONFIGURATION: SYSTEM API CREDENTIALS
@@ -63,7 +64,10 @@ export class CivicIntelligencePipeline {
     addresses?: Array<{ phone_1?: string }>;
     email_addresses?: string[];
     urls?: string[];
-    office?: { title?: string; district?: { district_type?: string } };
+    office?: {
+      title?: string;
+      district?: { district_type?: string; district_id?: string; label?: string };
+    };
   }): Promise<string | undefined> {
     const photoUrl = official.photo_origin_url?.trim();
     const biography = ciceroBiography(official.notes);
@@ -88,7 +92,11 @@ export class CivicIntelligencePipeline {
           office,
           level,
           party: official.party || "Nonpartisan",
-          jurisdiction: this.address,
+          jurisdiction:
+            official.office?.district?.label ||
+            official.office?.district?.district_id ||
+            this.address,
+          district: official.office?.district?.district_id ?? null,
           ...(photoUrl ? { photoUrl, isDemoPhoto: false } : {}),
           ...(biography ? { bio: biography } : {}),
           socialLinks: JSON.stringify(socialLinks),
@@ -103,7 +111,11 @@ export class CivicIntelligencePipeline {
           office,
           level,
           party: official.party || "Nonpartisan",
-          jurisdiction: this.address,
+          jurisdiction:
+            official.office?.district?.label ||
+            official.office?.district?.district_id ||
+            this.address,
+          district: official.office?.district?.district_id ?? null,
           photoUrl: photoUrl || "",
           isDemoPhoto: !photoUrl,
           confidence: "verified",
@@ -164,15 +176,7 @@ export class CivicIntelligencePipeline {
     });
 
     const cleanAddress = this.address.trim();
-    // Check if the input is a clean ZIP or ZIP+4 (e.g., 78701 or 78701-1234)
-    const isZip = /^[0-9]+(-[0-9]+)?$/.test(cleanAddress) && cleanAddress.length >= 5;
-
-    if (isZip) {
-      params.append("search_postal", cleanAddress);
-      params.append("search_country", "US");
-    } else {
-      params.append("search_loc", cleanAddress);
-    }
+    setCiceroTextLocation(params, cleanAddress);
 
     try {
       const response = await this.fetchWithTimeout(`${endpoint}?${params.toString()}`, {

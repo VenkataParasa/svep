@@ -233,6 +233,40 @@ export const issues: Issue[] = [
     confidence: "verified",
     lastUpdated: "2026-05-15",
   },
+  {
+    id: "issue-government-accountability",
+    slug: "government-accountability",
+    title: "Government Accountability & Ethics",
+    icon: "Landmark",
+    summary: "Open-records (FOIA) reform and limits on political contributions from utilities and state contractors.",
+    plainLanguageSummary:
+      "Michigan is one of only two states — with Massachusetts — where the governor and state Legislature are exempt from the Freedom of Information Act. Senate Bills 1 and 2 of 2025, which would end that exemption, passed the Senate 33-2 in January 2025 but have stalled in the House Governmental Operations Committee, whose chair has said FOIA reform is not a 2026 priority. Separately, a bipartisan package of bills — including House Bills 5975 and 5976 — would bar regulated utilities like DTE Energy and Consumers Energy, and large state contractors, from making political contributions.",
+    communityImpact:
+      "If enacted, FOIA expansion would let Detroit residents and journalists request records directly from the Governor's office and the Legislature for the first time, the same way they can already request records from Detroit city departments. The utility-donation ban would limit DTE Energy and Consumers Energy's ability to fund the campaigns of the same lawmakers who regulate their electricity rates — a direct link Detroit ratepayers raise when utility bills rise.",
+    relatedDepartments: [
+      { name: "Michigan Department of State — Bureau of Elections", url: "https://www.michigan.gov/sos/elections" },
+      { name: "Michigan House of Representatives — Government Operations Committee" },
+    ],
+    legislationIds: ["leg-sb1-2-2025-foia", "leg-hb5975-5976-2026-utility-donations"],
+    representativeIds: [],
+    candidateIds: ["cand-james-john", "cand-mckinney-donavan"],
+    publicDocuments: [
+      { title: "Senate Bill 1 of 2025 — Senate Fiscal Agency bill analysis", type: "bill", url: "https://legislature.mi.gov/documents/2025-2026/billanalysis/Senate/pdf/2025-SFA-0001-G.pdf", date: "2025-01-29" },
+      { title: "House Bill 5975 of 2026 — full bill text", type: "bill", url: "https://www.legislature.mi.gov/Bills/Bill?ObjectName=2026-HB-5975" },
+    ],
+    sourceIds: [
+      "src-michiganadvance-foia-senate-passes",
+      "src-senatedems-moss-foia",
+      "src-michiganadvance-foia-stalls",
+      "src-michiganadvance-utility-donation-ban",
+      "src-planetdetroit-utility-pledge",
+    ],
+    status: "active",
+    confidence: "verified",
+    lastUpdated: "2026-07-16",
+    demoDataNote:
+      "New issue category added after candidate research surfaced FOIA reform and utility/contractor campaign-finance bills as a recurring, sourced theme across multiple 2026 candidates.",
+  },
 ];
 
 export function getIssueBySlug(slug: string): Issue | undefined {

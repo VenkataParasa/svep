@@ -57,7 +57,7 @@ export default async function OfficialsNewPage({
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Elected Officials & Incumbent Stances
           </h1>
-          <p className="mt-2 max-w-2xl text-lg text-muted-foreground">
+          <p className="mt-2 w-full text-lg text-muted-foreground">
             Using the Civic Intelligence Pipeline to aggregate district
             boundaries, verify live incumbents, and infer policy behavior.
           </p>
@@ -83,7 +83,8 @@ export default async function OfficialsNewPage({
           <Info className="mb-4 size-10 text-muted-foreground" />
           <h3 className="text-lg font-medium">Enter a location</h3>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Use a full address for precise officials, or a ZIP code for an approximate centroid lookup.
+            Use a full address for precise officials, or a ZIP code for an
+            approximate centroid lookup.
           </p>
         </div>
       )}

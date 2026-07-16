@@ -6,8 +6,10 @@ import type { Representative } from "@/lib/types";
 
 export function RepresentativeListItem({
   representative,
+  officeAsTag = false,
 }: {
   representative: Pick<Representative, "id" | "name" | "office" | "party" | "photoUrl">;
+  officeAsTag?: boolean;
 }) {
   return (
     <Link
@@ -26,7 +28,13 @@ export function RepresentativeListItem({
             className="h-5 px-1.5 text-[11px]"
           />
         </div>
-        <p className="truncate text-sm text-muted-foreground">
+        <p
+          className={
+            officeAsTag
+              ? "mt-1.5 inline-flex max-w-full rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+              : "truncate text-sm text-muted-foreground"
+          }
+        >
           {representative.office}
         </p>
       </div>

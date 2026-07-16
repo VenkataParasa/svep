@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma as db } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
 import { ciceroBiography, ciceroSocialLinks } from '@/lib/cicero-official';
+import { setCiceroTextLocation } from '@/lib/cicero-location';
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +16,9 @@ export async function POST(request: Request) {
     let candidatesList = [];
 
     if (apiKey && apiKey.length > 5) {
-      const url = `https://app.cicerodata.com/v3.1/official?search_loc=${encodeURIComponent(address)}&format=json&max=200&key=${apiKey}`;
+      const params = new URLSearchParams({ format: 'json', max: '200', key: apiKey });
+      setCiceroTextLocation(params, address);
+      const url = `https://app.cicerodata.com/v3.1/official?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Cicero API Error: ${response.status}`);

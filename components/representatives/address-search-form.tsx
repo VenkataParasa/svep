@@ -12,8 +12,9 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   const searchParams = useSearchParams();
   const globalZip = useZipContextStore((state) => state.zip);
   const globalLocation = useZipContextStore((state) => state.location);
-  const setGlobalZip = useZipContextStore((state) => state.setZip);
-  const setGlobalLocation = useZipContextStore((state) => state.setLocation);
+  const setResolvedLocation = useZipContextStore(
+    (state) => state.setResolvedLocation,
+  );
   
   const initialAddress = defaultAddress || searchParams.get("address") || globalLocation || globalZip || "";
   const [address, setAddress] = React.useState(initialAddress);
@@ -38,12 +39,7 @@ export function AddressSearchForm({ defaultAddress }: { defaultAddress?: string 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (address.trim()) {
-      setGlobalLocation(address.trim());
-      // The shared dashboard context stores ZIP codes only. Keep a full street
-      // address in this page's URL without replacing the dashboard ZIP.
-      if (/^\d{5}(?:-\d{4})?$/.test(address.trim())) {
-        setGlobalZip(address.trim().slice(0, 5));
-      }
+      setResolvedLocation(address.trim(), null);
       const params = new URLSearchParams(searchParams);
       params.set("address", address.trim());
       router.push(`/officials-new?${params.toString()}`);

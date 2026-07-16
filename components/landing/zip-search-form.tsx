@@ -15,7 +15,7 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { useZipContextStore, isValidZip } from "@/store/zip-context-store";
+import { useZipContextStore } from "@/store/zip-context-store";
 
 const schema = z.object({
   zip: z
@@ -36,9 +36,8 @@ export function ZipSearchForm({
   showGeolocation?: boolean;
 }) {
   const router = useRouter();
-  const setZip = useZipContextStore((s) => s.setZip);
   const storedLocation = useZipContextStore((s) => s.location);
-  const setLocation = useZipContextStore((s) => s.setLocation);
+  const setResolvedLocation = useZipContextStore((s) => s.setResolvedLocation);
   const [locating, setLocating] = React.useState(false);
 
   const form = useForm<FormValues>({
@@ -54,43 +53,14 @@ export function ZipSearchForm({
 
   async function onSubmit(values: FormValues) {
     const location = values.zip.trim();
-    setLocation(location);
+    setResolvedLocation(location, null);
 
-    if (destination === "jurisdictions") {
-      router.push(`/jurisdictions?location=${encodeURIComponent(location)}`);
-      return;
-    }
+    // if (destination === "jurisdictions") {
+    //   router.push(`/jurisdictions?location=${encodeURIComponent(location)}`);
+    //   return;
+    // }
 
-    let resolvedZip = location;
-    const postalMatch = location.match(/^\d{5}$/);
-
-    if (postalMatch) {
-      resolvedZip = location;
-    } else {
-      try {
-        const response = await fetch(`/api/v1/geocode?address=${encodeURIComponent(location)}`);
-        const payload = await response.json();
-        if (!response.ok || !payload.address?.zipCode) {
-          throw new Error(payload.error || "We could not find that address.");
-        }
-        resolvedZip = String(payload.address.zipCode).match(/\b\d{5}\b/)?.[0] ?? "";
-      } catch (error) {
-        form.setError("zip", {
-          message: error instanceof Error ? error.message : "We could not find that address.",
-        });
-        return;
-      }
-    }
-
-    if (!isValidZip(resolvedZip)) {
-      form.setError("zip", {
-        message: "The location service did not return a valid five-digit ZIP code.",
-      });
-      return;
-    }
-
-    setZip(resolvedZip);
-    router.push(`/dashboard?zip=${resolvedZip}`);
+    router.push(`/dashboard?location=${encodeURIComponent(location)}`);
   }
 
   function useCurrentLocation() {
@@ -119,15 +89,15 @@ export function ZipSearchForm({
             error.code === error.PERMISSION_DENIED
               ? "Location permission was denied. Enter your address or ZIP code instead."
               : error.code === error.TIMEOUT
-                ? "Location detection timed out. Try again or enter your address."
-                : "Your location could not be detected. Enter your address or ZIP code instead.",
+              ? "Location detection timed out. Try again or enter your address."
+              : "Your location could not be detected. Enter your address or ZIP code instead.",
         });
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 300000,
-      },
+      }
     );
   }
 
@@ -167,7 +137,7 @@ export function ZipSearchForm({
             disabled={form.formState.isSubmitting}
           >
             <Search className="size-4" />
-            Find My Civic Information
+            Find My Jurisdiction Information
           </Button>
         </div>
         {showGeolocation && (

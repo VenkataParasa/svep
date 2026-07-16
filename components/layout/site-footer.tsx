@@ -11,21 +11,29 @@ const columns = [
       { href: "/search", label: "Search the Platform" },
     ],
   },
-  {
-    title: "Transparency",
-    links: [
-      { href: "/sources", label: "Source Transparency" },
-      { href: "/audit-trail", label: "Audit Trail" },
-      { href: "/why-this-information", label: "Why This Information" },
-    ],
-  },
+  // {
+  //   title: "Transparency",
+  //   links: [
+  //     { href: "/sources", label: "Source Transparency" },
+  //     { href: "/audit-trail", label: "Audit Trail" },
+  //     { href: "/why-this-information", label: "Why This Information" },
+  //   ],
+  // },
   {
     title: "Official Resources",
     links: [
       { href: "https://detroitmi.gov", label: "detroitmi.gov", external: true },
-      { href: "https://detroitmi.gov/departments/department-elections", label: "Department of Elections", external: true },
-      { href: "https://www.michigan.gov/sos/elections", label: "Michigan Secretary of State", external: true },
-      { href: "/admin/login", label: "Staff Sign In" },
+      {
+        href: "https://detroitmi.gov/departments/department-elections",
+        label: "Department of Elections",
+        external: true,
+      },
+      {
+        href: "https://www.michigan.gov/sos/elections",
+        label: "Michigan Secretary of State",
+        external: true,
+      },
+      // { href: "/admin/login", label: "Staff Sign In" },
     ],
   },
 ];
@@ -45,13 +53,18 @@ export function SiteFooter() {
                 className="h-12 w-auto rounded-sm bg-white p-0.5"
               />
               <span className="leading-tight">
-                <span className="block text-sm font-semibold">City of Detroit</span>
-                <span className="block text-xs text-muted-foreground">Voter Education Platform</span>
+                <span className="block text-sm font-semibold">
+                  City of Detroit
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Voter Education Platform
+                </span>
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-              Issued by the Office of Contracting and Procurement on behalf of the Department of
-              Elections. Demonstration platform built on publicly available government data.
+              Issued by the Office of Contracting and Procurement on behalf of
+              the Department of Elections. This platform is built on publicly
+              available government data.
             </p>
           </div>
           {columns.map((col) => (
@@ -84,8 +97,14 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="mt-10 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 City of Detroit. Presales demonstration only — not an official city service.</p>
-          <p>Data compiled from official City of Detroit, State of Michigan, and federal sources.</p>
+          <p>
+            © 2026 City of Detroit. Presales demonstration only — not an
+            official city service.
+          </p>
+          <p>
+            Data compiled from official City of Detroit, State of Michigan, and
+            federal sources.
+          </p>
         </div>
       </div>
     </footer>
