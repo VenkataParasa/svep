@@ -13,6 +13,7 @@ import {
   officialGovernmentPhotoSourceId,
   type OfficialGovernmentPhoto,
 } from "@/lib/official-government-photo";
+import { chaosFetch } from "@/lib/chaos-monkey";
 
 const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
 const LOCATION_CACHE_VERSION = "verified-official-photos-v3";
@@ -162,10 +163,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const [districtResponse, officialResponse] = await Promise.all([
-      fetch(`${CICERO_BASE_URL}/legislative_district?${params.toString()}`, {
+      chaosFetch(`${CICERO_BASE_URL}/legislative_district?${params.toString()}`, {
         next: { revalidate: 60 * 60 },
       }),
-      fetch(`${CICERO_BASE_URL}/official?${params.toString()}`, {
+      chaosFetch(`${CICERO_BASE_URL}/official?${params.toString()}`, {
         next: { revalidate: 60 * 60 },
       }),
     ]);

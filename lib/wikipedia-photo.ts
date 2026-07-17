@@ -13,6 +13,8 @@ export type WikipediaPhoto = {
   pageTitle: string;
 };
 
+import { chaosFetch } from "./chaos-monkey";
+
 const WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php";
 
 function normalizedName(value: string) {
@@ -46,7 +48,7 @@ async function wikipediaQuery(params: URLSearchParams) {
   params.set("pithumbsize", "800");
   params.set("inprop", "url");
 
-  const response = await fetch(`${WIKIPEDIA_API}?${params}`, {
+  const response = await chaosFetch(`${WIKIPEDIA_API}?${params}`, {
     headers: { "User-Agent": "SVEP civic-information application/1.0" },
     next: { revalidate: 60 * 60 * 24 * 30 },
   });
@@ -60,7 +62,7 @@ export async function findWikipediaPortrait(
   name: string,
   requiredContext: string[] = [],
 ) {
-  const summaryResponse = await fetch(
+  const summaryResponse = await chaosFetch(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name.replace(/ /g, "_"))}`,
     {
       headers: { "User-Agent": "SVEP civic-information application/1.0" },

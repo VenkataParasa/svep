@@ -4,6 +4,8 @@ export type OfficialGovernmentPhoto = {
   pageTitle: string;
 };
 
+import { chaosFetch } from "./chaos-monkey";
+
 function normalized(value: string) {
   return value
     .normalize("NFKD")
@@ -68,7 +70,7 @@ export async function findOfficialGovernmentPortrait(
 
   for (const pageUrl of pageUrls.filter(isGovernmentPage)) {
     try {
-      const response = await fetch(pageUrl, {
+      const response = await chaosFetch(pageUrl, {
         headers: {
           Accept: "text/html,application/xhtml+xml",
           "User-Agent": "SVEP civic-information application/1.0",
