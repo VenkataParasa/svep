@@ -44,6 +44,7 @@ import {
   representativeOfficeLabel,
 } from "@/lib/representative-office";
 import { getIssueById } from "@/data/issues";
+import { getSourceById } from "@/data/sources";
 
 export async function generateStaticParams() {
   try {
@@ -113,6 +114,36 @@ export default async function RepresentativeProfilePage({
   });
 
   if (!representative) notFound();
+
+  const profileSources = (() => {
+    const merged = new Map<string, Source>();
+    for (const source of representative.sources as unknown as Source[]) {
+      merged.set(source.id, source);
+    }
+
+    const ciceroSource = getSourceById("src-cicero-api");
+    if (ciceroSource) merged.set(ciceroSource.id, ciceroSource);
+
+    // Detroit's website is authoritative for Detroit municipal offices, but
+    // should not be presented as the authority for state or federal offices.
+    const isDetroitMunicipalOfficial =
+      representative.level === "city" &&
+      /detroit/i.test(
+        `${representative.jurisdiction} ${representative.office}`,
+      );
+    if (isDetroitMunicipalOfficial) {
+      const office = representative.office.toLowerCase();
+      const detroitSourceId = office.includes("mayor")
+        ? "src-detroitmi-mayor"
+        : office.includes("council")
+          ? "src-detroitmi-council"
+          : "src-detroitmi-contact";
+      const detroitSource = getSourceById(detroitSourceId);
+      if (detroitSource) merged.set(detroitSource.id, detroitSource);
+    }
+
+    return [...merged.values()];
+  })();
 
   const officeDetails = {
     office: representative.office,
@@ -402,7 +433,7 @@ export default async function RepresentativeProfilePage({
             </CardHeader>
             <CardContent>
               <SourceList
-                sources={representative.sources as unknown as Source[]}
+                sources={profileSources}
               />
             </CardContent>
           </Card>
@@ -413,7 +444,7 @@ export default async function RepresentativeProfilePage({
         subjectName={representative.name}
         confidence={representative.confidence as unknown as Confidence}
         demoDataNote={representative.demoDataNote || undefined}
-        sourceCount={representative.sources.length}
+        sourceCount={profileSources.length}
       />
 
       {uniqueLegislation.length > 0 && (

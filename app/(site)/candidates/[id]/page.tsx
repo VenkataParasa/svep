@@ -116,7 +116,7 @@ export default async function CandidateProfilePage({
           <CardContent className="flex flex-col items-center px-6 pt-2 text-center">
             <PersonAvatar
               name={candidate.name}
-              photoUrl={candidate.photoUrl || undefined}
+              photoUrl={`/api/candidate-photo/${candidate.id}`}
               size="xl"
               className="size-44 rounded-2xl sm:size-52 [&_[data-slot=avatar-fallback]]:rounded-2xl [&_[data-slot=avatar-image]]:rounded-2xl"
             />

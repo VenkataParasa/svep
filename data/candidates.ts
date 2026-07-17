@@ -3,12 +3,14 @@ import type { Candidate } from "@/lib/types";
 // Real, sourced candidates for the 2026 Michigan primary (Aug. 4, 2026) and
 // general (Nov. 3, 2026) elections, scoped to the races that cover ZIP
 // codes 48226, 48201, 48244 (downtown/Midtown Detroit) and 48230 (Grosse
-// Pointe Park). This is a curated snapshot, not a live feed — candidate
+// Pointe Park). Legislative filing rosters are reconciled to the Wayne
+// County Clerk's official candidate list supplied on July 16, 2026. This is
+// a sourced snapshot, not a live feed — candidate
 // fields, endorsements, and fundraising totals change during a campaign.
 // Every entry below is a real, currently-filed candidate as of the source
 // dates cited in sourceIds; candidates who withdrew, were disqualified, or
-// suspended their campaigns (e.g. Mallory McMorrow, Tom Leonard, Aric
-// Nesbitt, Ralph Rebandt, Mike Duggan) are excluded from race rosters,
+// suspended their campaigns (e.g. Tom Leonard, Aric Nesbitt, Ralph
+// Rebandt, Mike Duggan) are excluded from race rosters,
 // though a couple are kept as records (status: "withdrawn") because
 // data/issues.ts already references their candidateId.
 //
@@ -33,6 +35,7 @@ export interface Race {
   generalDate: string;
   description: string;
   rosterNote?: string;
+  sourceIds?: string[];
 }
 
 export const races: Race[] = [
@@ -55,6 +58,9 @@ export const races: Race[] = [
     generalDate: "2026-11-03",
     description:
       "Sen. Gary Peters announced in January 2025 that he would not seek re-election, opening the seat.",
+    rosterNote:
+      "The Wayne County Clerk's official list shows three Democratic candidates and one Republican candidate for this statewide seat.",
+    sourceIds: ["src-wayne-county-official-candidate-list-2026"],
   },
   {
     id: "us-house-mi13-2026",
@@ -66,7 +72,12 @@ export const races: Race[] = [
     description:
       "Covers Detroit (including downtown, Midtown, and New Center) and Downriver/Grosse Pointe-area suburbs. Rated the most Democratic district in Michigan (Cook PVI D+22), so the Aug. 4 Democratic primary effectively decides the seat.",
     rosterNote:
-      "No Republican candidate had filed for this seat as of the sources cited below.",
+      "The Wayne County Clerk's official list shows two Democratic candidates and one Republican candidate for this seat.",
+    sourceIds: [
+      "src-wayne-county-official-candidate-list-2026",
+      "src-mi-boe-official-candidate-listing",
+      "src-ballotpedia-mi13-dem-primary",
+    ],
   },
   {
     id: "mi-senate-3-2026",
@@ -77,7 +88,13 @@ export const races: Race[] = [
     generalDate: "2026-11-03",
     description:
       "Covers downtown/Midtown/New Center Detroit, Hamtramck, and Highland Park. Open seat: Sen. Stephanie Chang is term-limited.",
-    rosterNote: "No Republican candidate had filed for this seat as of the sources cited below.",
+    rosterNote:
+      "The Wayne County Clerk's official list shows 11 Democratic candidates and one Republican candidate for this seat.",
+    sourceIds: [
+      "src-wayne-county-official-candidate-list-2026",
+      "src-mi-boe-official-candidate-listing",
+      "src-ballotpedia-mi-senate-d3",
+    ],
   },
   {
     id: "mi-house-9-2026",
@@ -87,9 +104,14 @@ export const races: Race[] = [
     primaryDate: "2026-08-04",
     generalDate: "2026-11-03",
     description:
-      "Covers downtown/Midtown/New Center Detroit and Corktown. Open seat: House Speaker Joe Tate is retiring. Nine Democrats filed for the Aug. 4 primary; five with substantive public platforms are profiled here.",
+      "Covers downtown/Midtown/New Center Detroit and Corktown. Open seat: House Speaker Joe Tate is retiring. Nine Democrats and one Republican are listed for the Aug. 4 primary.",
     rosterNote:
-      "5 of 9 declared Democratic primary candidates are profiled here — see the Ballotpedia and MLCM district guides linked in each profile for the complete filing list.",
+      "All candidates appearing in the Wayne County Clerk's official filing list are included; detailed profiles are shown where independently sourced information is available.",
+    sourceIds: [
+      "src-wayne-county-official-candidate-list-2026",
+      "src-mi-boe-official-candidate-listing",
+      "src-mlcmi-house9-primary",
+    ],
   },
   {
     id: "mi-senate-12-2026",
@@ -101,7 +123,11 @@ export const races: Race[] = [
     description:
       "Covers Grosse Pointe Park, St. Clair Shores, and nearby Macomb/Wayne communities. Incumbent Sen. Kevin Hertel is seeking re-election, unopposed in the Democratic primary.",
     rosterNote:
-      "Five Republicans also filed for this seat (Joseph Backus, Patrick Biange, John Goldwater, Eileen Tesch, Shelley Wright) — see the official Macomb County candidate list linked in Sen. Hertel's profile.",
+      "The official filing lists show incumbent Kevin Hertel in the Democratic primary and five candidates in the Republican primary.",
+    sourceIds: [
+      "src-wayne-county-official-candidate-list-2026",
+      "src-macomb-candidate-list-2026",
+    ],
   },
   {
     id: "mi-house-10-2026",
@@ -112,8 +138,76 @@ export const races: Race[] = [
     generalDate: "2026-11-03",
     description:
       "Covers northeast Detroit, Harper Woods, and the Grosse Pointes (including Grosse Pointe Park). Incumbent Rep. Veronica Paiz faces two Democratic primary challengers; one Republican has also filed.",
+    rosterNote:
+      "All four candidates appearing in the Wayne County Clerk's official filing list are included.",
+    sourceIds: ["src-wayne-county-official-candidate-list-2026"],
   },
 ];
+
+type FilingCandidate = {
+  id: string;
+  raceId: string;
+  name: string;
+  party: Candidate["party"];
+  office: string;
+  jurisdiction: string;
+  status?: Candidate["status"];
+  photoUrl?: string;
+  website?: string;
+  sourceIds?: string[];
+};
+
+function candidateFromOfficialFiling(entry: FilingCandidate): CandidateRecord {
+  return {
+    ...entry,
+    election: `2026 Election — ${entry.jurisdiction} — ${entry.party} Primary`,
+    level: entry.office.startsWith("U.S.") ? "federal" : "state",
+    electionDate: "2026-08-04",
+    status: entry.status ?? "active",
+    filingStatus:
+      "Listed on the Wayne County Clerk official candidate list for the August 4, 2026 primary",
+    photoUrl: entry.photoUrl ?? "",
+    isDemoPhoto: !entry.photoUrl,
+    confidence: "verified",
+    positionSummary:
+      `Officially listed ${entry.party} primary candidate for ${entry.jurisdiction}. ` +
+      "No independently verified campaign biography or policy platform has been added yet.",
+    issuePositions: [],
+    officialLinks: entry.website ? { website: entry.website } : {},
+    sourceIds: [
+      "src-wayne-county-official-candidate-list-2026",
+      ...(entry.sourceIds ?? []),
+    ],
+  };
+}
+
+const officialFilingEntries: FilingCandidate[] = [
+  // Candidates missing from the richer profiles below. Names and parties are
+  // transcribed from the Wayne County Clerk's official Aug. 4 primary list.
+  { id: "cand-mcmorrow-mallory", raceId: "us-senate-2026", name: "Mallory McMorrow", party: "Democratic", office: "U.S. Senator", jurisdiction: "Michigan", status: "withdrawn" },
+  { id: "cand-nykoriak-tp", raceId: "us-house-mi13-2026", name: "T. P. Nykoriak", party: "Republican", office: "U.S. Representative", jurisdiction: "Michigan's 13th Congressional District" },
+  { id: "cand-alam-mohammad", raceId: "mi-senate-3-2026", name: "Mohammad Alam", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-council-lejuan", raceId: "mi-senate-3-2026", name: "LeJuan Council", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-hall-korey", raceId: "mi-senate-3-2026", name: "Korey Hall", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3", photoUrl: "https://www.koreyhallforstatesenate.com/image00000.jpg", website: "https://www.koreyhallforstatesenate.com/", sourceIds: ["src-korey-hall-campaign"] },
+  { id: "cand-hunter-gary", raceId: "mi-senate-3-2026", name: "Gary Hunter", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-knott-kimberly-hill", raceId: "mi-senate-3-2026", name: "Kimberly Hill Knott", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-reeves-toinu", raceId: "mi-senate-3-2026", name: "Toinu Reeves", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-shaw-abraham", raceId: "mi-senate-3-2026", name: "Abraham Shaw", party: "Democratic", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-price-mark-ashley", raceId: "mi-senate-3-2026", name: "Mark Ashley Price", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 3" },
+  { id: "cand-hepp-bryant", raceId: "mi-house-9-2026", name: "Bryant Hepp", party: "Democratic", office: "State Representative", jurisdiction: "Michigan House District 9" },
+  { id: "cand-holman-karriem", raceId: "mi-house-9-2026", name: "Karriem Holman", party: "Democratic", office: "State Representative", jurisdiction: "Michigan House District 9" },
+  { id: "cand-hurt-patricia", raceId: "mi-house-9-2026", name: "Patricia Hurt", party: "Democratic", office: "State Representative", jurisdiction: "Michigan House District 9" },
+  { id: "cand-silva-rick", raceId: "mi-house-9-2026", name: "Rick Silva", party: "Democratic", office: "State Representative", jurisdiction: "Michigan House District 9" },
+  { id: "cand-lundgren-michele", raceId: "mi-house-9-2026", name: "Michele Lundgren", party: "Republican", office: "State Representative", jurisdiction: "Michigan House District 9" },
+  { id: "cand-backus-joseph", raceId: "mi-senate-12-2026", name: "Joseph A. Backus", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 12" },
+  { id: "cand-biange-patrick", raceId: "mi-senate-12-2026", name: "Patrick Shawn Biange", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 12" },
+  { id: "cand-goldwater-john", raceId: "mi-senate-12-2026", name: "John Goldwater", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 12" },
+  { id: "cand-tesch-eileen", raceId: "mi-senate-12-2026", name: "Eileen Tesch", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 12" },
+  { id: "cand-wright-shelley", raceId: "mi-senate-12-2026", name: "Shelley Wright", party: "Republican", office: "State Senator", jurisdiction: "Michigan Senate District 12" },
+];
+
+const candidatesFromOfficialFiling: CandidateRecord[] =
+  officialFilingEntries.map(candidateFromOfficialFiling);
 
 export const candidates: CandidateRecord[] = [
   // ---------------------------------------------------------------------
@@ -630,12 +724,13 @@ export const candidates: CandidateRecord[] = [
           "Sponsored the One Stop Shop for Small Business Licensing Act of 2025 (H.R. 4824), which would streamline and consolidate small-business licensing requirements across federal agencies.",
       },
     ],
-    officialLinks: {},
+    officialLinks: { website: "https://thanedar.house.gov/" },
     sourceIds: [
       "src-detroitnews-thanedar-endorsement",
       "src-nbcnews-thanedar-challenge",
       "src-ballotpedia-mi13-dem-primary",
       "src-wikipedia-photo-shri-thanedar",
+      "src-house-thanedar",
       "src-govtrack-thanedar-bills",
     ],
     legislationIds: [
@@ -714,8 +809,8 @@ export const candidates: CandidateRecord[] = [
     party: "Democratic",
     jurisdiction: "Michigan's 13th Congressional District",
     electionDate: "2026-08-04",
-    status: "active",
-    filingStatus: "Filed — Democratic primary candidate",
+    status: "withdrawn",
+    filingStatus: "Not active on the current Michigan official candidate listing",
     photoUrl: "",
     isDemoPhoto: true,
     confidence: "demo-data",
@@ -723,7 +818,7 @@ export const candidates: CandidateRecord[] = [
       "Declared Democratic primary candidate for Michigan's 13th Congressional District. Detailed policy positions were not found in available public coverage as of July 2026.",
     issuePositions: [],
     officialLinks: {},
-    sourceIds: ["src-ballotpedia-mi13-dem-primary"],
+    sourceIds: ["src-ballotpedia-mi13-dem-primary", "src-mi-boe-official-candidate-listing"],
   },
   {
     id: "cand-carbonaro-anthony",
@@ -735,16 +830,16 @@ export const candidates: CandidateRecord[] = [
     party: "Democratic",
     jurisdiction: "Michigan's 13th Congressional District",
     electionDate: "2026-08-04",
-    status: "active",
-    filingStatus: "Filed — Democratic primary candidate",
+    status: "withdrawn",
+    filingStatus: "Not active on the current Michigan official candidate listing",
     photoUrl: "",
     isDemoPhoto: true,
     confidence: "demo-data",
     positionSummary:
       "Declared Democratic primary candidate for Michigan's 13th Congressional District. Detailed policy positions were not found in available public coverage as of July 2026.",
     issuePositions: [],
-    officialLinks: {},
-    sourceIds: ["src-ballotpedia-mi13-dem-primary"],
+    officialLinks: { website: "https://amcarbonaro.com/" },
+    sourceIds: ["src-ballotpedia-mi13-dem-primary", "src-mi-boe-official-candidate-listing"],
   },
   {
     id: "cand-hassan-nazmul",
@@ -756,8 +851,8 @@ export const candidates: CandidateRecord[] = [
     party: "Democratic",
     jurisdiction: "Michigan's 13th Congressional District",
     electionDate: "2026-08-04",
-    status: "active",
-    filingStatus: "Filed — Democratic primary candidate",
+    status: "withdrawn",
+    filingStatus: "Not active on the current Michigan official candidate listing",
     photoUrl: "",
     isDemoPhoto: true,
     confidence: "demo-data",
@@ -765,7 +860,7 @@ export const candidates: CandidateRecord[] = [
       "Declared Democratic primary candidate for Michigan's 13th Congressional District. Detailed policy positions were not found in available public coverage as of July 2026.",
     issuePositions: [],
     officialLinks: {},
-    sourceIds: ["src-ballotpedia-mi13-dem-primary"],
+    sourceIds: ["src-ballotpedia-mi13-dem-primary", "src-mi-boe-official-candidate-listing"],
   },
 
   // ---------------------------------------------------------------------
@@ -819,8 +914,8 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://voteconyers.com/images/IMG_4792.JPG",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "A lifelong Detroiter and son of the late Congressman John Conyers Jr. and former City Council President Monica Conyers, running on affordability, economic mobility, and restoring trust in government.",
@@ -830,8 +925,8 @@ export const candidates: CandidateRecord[] = [
         summary: "Platform centers on affordability and expanding economic mobility for Detroit residents.",
       },
     ],
-    officialLinks: {},
-    sourceIds: ["src-ballotpedia-mi-senate-d3"],
+    officialLinks: { website: "https://voteconyers.com/" },
+    sourceIds: ["src-ballotpedia-mi-senate-d3", "src-john-conyers-campaign"],
   },
   {
     id: "cand-garrett-latanya",
@@ -852,7 +947,10 @@ export const candidates: CandidateRecord[] = [
       "A former three-term state representative (District 7, 2015–2020) seeking a return to Lansing via the open Senate seat. Detailed 2026 platform positions were not found in available coverage as of July 2026.",
     issuePositions: [],
     officialLinks: {},
-    sourceIds: ["src-detroitchamber-senate-seats"],
+    sourceIds: [
+      "src-detroitchamber-senate-seats",
+      "src-wayne-county-official-candidate-list-2026",
+    ],
   },
   {
     id: "cand-james-theodore",
@@ -864,8 +962,9 @@ export const candidates: CandidateRecord[] = [
     party: "Democratic",
     jurisdiction: "Michigan Senate District 3",
     electionDate: "2026-08-04",
-    status: "active",
-    filingStatus: "Filed — Democratic primary candidate",
+    status: "withdrawn",
+    filingStatus:
+      "Not listed on the Wayne County Clerk's official candidate list dated June 8, 2026",
     photoUrl: "",
     isDemoPhoto: true,
     confidence: "demo-data",
@@ -879,7 +978,10 @@ export const candidates: CandidateRecord[] = [
       },
     ],
     officialLinks: {},
-    sourceIds: ["src-detroitchamber-senate-seats"],
+    sourceIds: [
+      "src-detroitchamber-senate-seats",
+      "src-wayne-county-official-candidate-list-2026",
+    ],
   },
   {
     id: "cand-taylor-eboni",
@@ -893,8 +995,9 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate; endorsed early by term-limited Sen. Stephanie Chang",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl:
+      "https://images.squarespace-cdn.com/content/v1/6966d989a84dee6eb9f2867a/8dab2c2e-7b73-4f97-a273-7c33fb0b82e4/Eboni_Transparent+Background+%281%29.png",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "A first-time candidate whose career has centered on expanding political power and economic opportunity for Black women through roles at Higher Heights and Mothering Justice; campaign priorities include affordability, child-care access, and holding payday lenders accountable.",
@@ -909,8 +1012,8 @@ export const candidates: CandidateRecord[] = [
         summary: "Also lists public-school investment among her top legislative priorities.",
       },
     ],
-    officialLinks: {},
-    sourceIds: ["src-detroitchamber-senate-seats"],
+    officialLinks: { website: "https://www.eboniformichigan.com/" },
+    sourceIds: ["src-detroitchamber-senate-seats", "src-eboni-taylor-campaign"],
   },
 
   // ---------------------------------------------------------------------
@@ -929,8 +1032,8 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate; endorsed by retiring Rep. Joe Tate",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://harringtonformi.com/assets/hero-photo.webp",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "A Wayne State University law student and former Detroit City Council staffer, running on a six-point platform covering public safety, jobs, schools, transit, environment, and housing.",
@@ -984,8 +1087,9 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl:
+      "https://d3ciwvs59ifrt8.cloudfront.net/485f7b57-2a64-4bf9-b1dd-4bc891b6c73f/509bede7-56c3-43ae-ad3c-9e1c21ff97e4.png",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "Founder of the youth-focused nonprofit SLS Detroit and a former Michigan Senate District 3 staffer and Deloitte financial analyst, campaigning on reducing Michigan's cost of living.",
@@ -1010,8 +1114,9 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl:
+      "https://static1.squarespace.com/static/6290652ee687604dec2f4466/t/690d52a8555aac56ee1fdab9/1762480808589/MUA+-+15.PNG?format=1500w",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "A community organizer running in the redrawn District 9 after a previous, historic run in District 10 as the first openly trans woman to seek Michigan's state legislature. Detailed 2026 policy positions were not found in available coverage as of July 2026.",
@@ -1031,8 +1136,8 @@ export const candidates: CandidateRecord[] = [
     electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — Democratic primary candidate; endorsed by the 13th District Democrats",
-    photoUrl: "",
-    isDemoPhoto: true,
+    photoUrl: "https://willieburton.com/wp-content/uploads/2026/05/willierep.jpg",
+    isDemoPhoto: false,
     confidence: "demo-data",
     positionSummary:
       "A former Detroit Board of Police Commissioner whose campaign frames public safety as beginning with living-wage jobs, affordable housing, strong schools, and accessible mental-health care.",
@@ -1077,11 +1182,11 @@ export const candidates: CandidateRecord[] = [
     raceId: "mi-senate-12-2026",
     name: "Kevin Hertel",
     office: "State Senator",
-    election: "2026 Election — Michigan Senate District 12",
+    election: "2026 Election — Michigan Senate District 12 — Democratic Primary",
     level: "state",
     party: "Democratic",
     jurisdiction: "Michigan Senate District 12",
-    electionDate: "2026-11-03",
+    electionDate: "2026-08-04",
     status: "active",
     filingStatus: "Filed — incumbent, unopposed in the Democratic primary",
     photoUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Veteran_Suicide_Prevention_Roundtable_Discusses_Commitment_to_Service_Members_%284%29_%28cropped%29.jpg",
@@ -1121,7 +1226,7 @@ export const candidates: CandidateRecord[] = [
       "leg-sb1048-2026-data-center-labor",
     ],
     demoDataNote:
-      "Five Republicans have also filed for this seat (Joseph Backus, Patrick Biange, John Goldwater, Eileen Tesch, Shelley Wright); their individual platforms were not detailed in available coverage, so they are not profiled here — see the official Macomb County candidate list cited above.",
+      "The five Republican primary candidates are included as separate filing records sourced to official candidate lists.",
   },
 
   // ---------------------------------------------------------------------
@@ -1235,6 +1340,7 @@ export const candidates: CandidateRecord[] = [
     officialLinks: {},
     sourceIds: ["src-ballotpedia-veronica-paiz", "src-mi-boe-official-candidate-listing"],
   },
+  ...candidatesFromOfficialFiling,
 ];
 
 // ZIP codes covered by this demo, and the races that appear on the ballot

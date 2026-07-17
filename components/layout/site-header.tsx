@@ -7,6 +7,11 @@ import { usePathname } from "next/navigation";
 import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -22,8 +27,11 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Jurisdiction Dashboard" },
   { href: "/officials-new", label: "Elected Officials" },
-  { href: "/issues", label: "Civic Issues" },
+  { href: "/know-your-ballot", label: "Active Candidates", tip: "Coming Soon" },
+  { href: "/issues", label: "Civic Issues", tip: "Coming Soon" },
 ];
+
+const menu_disabled = ["Active Candidates", "Civic Issues"];
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -78,16 +86,32 @@ export function SiteHeader() {
 
         <nav className="hidden min-w-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={withLocation(item.href)}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                pathname === item.href && "bg-accent text-accent-foreground"
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Link
+                    key={item.href}
+                    href={
+                      menu_disabled.includes(item.label)
+                        ? ""
+                        : withLocation(item.href)
+                    }
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                      pathname === item.href &&
+                        "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                }
+              />
+              {item.tip && (
+                <TooltipContent className="bg-white">
+                  <p className="bg-white text-md text-black">{item.tip}</p>
+                </TooltipContent>
               )}
-            >
-              {item.label}
-            </Link>
+            </Tooltip>
           ))}
         </nav>
 
