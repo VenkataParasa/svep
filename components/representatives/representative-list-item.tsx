@@ -11,6 +11,16 @@ export function RepresentativeListItem({
   representative: Pick<Representative, "id" | "name" | "office" | "party" | "photoUrl"> & { fallbackPhotoUrl?: string };
   officeAsTag?: boolean;
 }) {
+  const isDirectUrl = representative.photoUrl?.startsWith("http");
+  const proxyUrl = representative.id ? `/api/representative-photo/${representative.id}` : undefined;
+  
+  const primaryUrl = representative.fallbackPhotoUrl 
+    ? representative.photoUrl 
+    : (isDirectUrl ? proxyUrl : representative.photoUrl);
+    
+  const secondaryUrl = representative.fallbackPhotoUrl 
+    || (isDirectUrl ? representative.photoUrl : undefined);
+
   return (
     <Link
       href={`/representatives/${representative.id}`}
@@ -18,8 +28,8 @@ export function RepresentativeListItem({
     >
       <PersonAvatar
         name={representative.name}
-        photoUrl={representative.photoUrl}
-        fallbackUrl={representative.fallbackPhotoUrl}
+        photoUrl={primaryUrl || undefined}
+        fallbackUrl={secondaryUrl || undefined}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
