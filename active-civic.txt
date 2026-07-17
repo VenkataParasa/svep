@@ -1,0 +1,32 @@
+Analysis of Navigation Links: "Active Candidates" and "Civic Issues"
+
+1. Desktop Navigation Restriction
+In the main navigation menu (desktop view), the links for "Active Candidates" and "Civic Issues" are intentionally disabled via code.
+There is a hardcoded array in `components/layout/site-header.tsx`:
+```typescript
+const menu_disabled = ["Active Candidates", "Civic Issues"];
+```
+When rendering the desktop links, the application checks if the menu item's label is inside this `menu_disabled` array. If it is, it dynamically changes the link destination to `""` (an empty string).
+```typescript
+href={
+  menu_disabled.includes(item.label)
+    ? ""
+    : withLocation(item.href)
+}
+```
+Because the `href` is set to `""`, clicking the link on a desktop browser goes nowhere (it just re-renders the current page or ignores the click). Additionally, the desktop navigation includes a "Coming Soon" tooltip for these specific links to indicate they are under construction.
+
+2. Mobile Navigation Bug/Inconsistency
+Interestingly, this `menu_disabled` restriction was only applied to the desktop `<nav>`. 
+In the mobile side-menu (the `<SheetContent>` component), the code maps through the same `navItems` but completely ignores the `menu_disabled` array:
+```typescript
+<Link
+  key={item.href}
+  href={withLocation(item.href)}
+  // ...
+>
+```
+Because of this, if a user opens the mobile menu (hamburger icon on smaller screens), the links for "Active Candidates" and "Civic Issues" will actually work and navigate to `/know-your-ballot` and `/issues` respectively.
+
+Conclusion
+The links are not working on desktop because they were intentionally disabled using a `menu_disabled` array to act as "Coming Soon" placeholders. However, this rule was accidentally omitted from the mobile navigation, causing inconsistent behavior between screen sizes.
