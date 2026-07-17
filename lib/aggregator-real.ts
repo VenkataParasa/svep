@@ -243,6 +243,7 @@ export class CivicIntelligencePipeline {
               photo_url: (official.photo_origin_url && representativeId) 
                 ? `/api/representative-photo/${representativeId}` 
                 : (official.photo_origin_url || ""),
+              photo_origin_url: official.photo_origin_url || "",
               urls: official.urls || [],
               phones: official.addresses?.map((a: { phone_1?: string }) => a.phone_1).filter(Boolean) || [],
               facebook: getSocial("FACEBOOK"),

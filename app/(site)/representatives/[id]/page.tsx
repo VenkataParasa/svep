@@ -213,6 +213,7 @@ export default async function RepresentativeProfilePage({
                   ? `/api/representative-photo/${representative.id}`
                   : undefined
               }
+              fallbackUrl={representative.photoUrl || undefined}
               size="xl"
               className="size-44 rounded-2xl sm:size-52 [&_[data-slot=avatar-fallback]]:rounded-2xl [&_[data-slot=avatar-image]]:rounded-2xl"
             />

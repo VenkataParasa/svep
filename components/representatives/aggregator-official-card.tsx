@@ -125,6 +125,7 @@ export function AggregatorOfficialCard({
             <PersonAvatar
               name={incumbent.name || "Unknown Official"}
               photoUrl={incumbent.photo_url || undefined}
+              fallbackUrl={incumbent.photo_origin_url || undefined}
               className="size-14 border-2 border-background shadow-sm"
             />
 
