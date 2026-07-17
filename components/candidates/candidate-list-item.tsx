@@ -31,6 +31,7 @@ export function CandidateListItem({
       <PersonAvatar
         name={candidate.name}
         photoUrl={`/api/candidate-photo/${candidate.id}`}
+        fallbackUrl={candidate.photoUrl || undefined}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">

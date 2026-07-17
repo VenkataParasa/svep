@@ -29,6 +29,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
           <PersonAvatar
             name={candidate.name}
             photoUrl={`/api/candidate-photo/${candidate.id}`}
+            fallbackUrl={candidate.photoUrl || undefined}
             size="lg"
           />
           <div className="min-w-0 flex-1">
