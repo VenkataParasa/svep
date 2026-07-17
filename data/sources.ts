@@ -5,6 +5,16 @@ import type { Source } from "@/lib/types";
 // nonpartisan reference sources are included and clearly typed as such.
 export const sources: Source[] = [
   {
+    id: "src-cicero-api",
+    name: "Cicero API — Current Elected Officials",
+    type: "government",
+    url: "https://www.cicerodata.com/",
+    verificationStatus: "verified",
+    lastUpdated: "2026-07-16",
+    notes:
+      "Current officeholder, office, district, biography, contact, and social-profile data.",
+  },
+  {
     id: "src-detroitmi-mayor",
     name: "City of Detroit — Office of the Mayor",
     type: "government",
@@ -736,7 +746,41 @@ export const sources: Source[] = [
     url: "https://mi-boe.entellitrak.com/etk-mi-boe-prod/page.request.do?page=page.miboePublicReport&electionType=PRI&electionYear=2026",
     verificationStatus: "verified",
     lastUpdated: "2026-07-01",
-    notes: "Authoritative statewide filing list for the August 4, 2026 primary; the platform's candidate roster is a curated subset of this list, not a full mirror.",
+    notes: "Authoritative statewide filing list for the August 4, 2026 primary.",
+  },
+  {
+    id: "src-john-conyers-campaign",
+    name: "John Conyers III for Michigan Senate — campaign site",
+    type: "campaign",
+    url: "https://voteconyers.com/",
+    verificationStatus: "verified",
+    lastUpdated: "2026-07-16",
+  },
+  {
+    id: "src-eboni-taylor-campaign",
+    name: "Eboni Taylor for Michigan Senate — campaign site",
+    type: "campaign",
+    url: "https://www.eboniformichigan.com/",
+    verificationStatus: "verified",
+    lastUpdated: "2026-07-16",
+  },
+  {
+    id: "src-korey-hall-campaign",
+    name: "Korey Hall for Michigan Senate — campaign site",
+    type: "campaign",
+    url: "https://www.koreyhallforstatesenate.com/",
+    verificationStatus: "verified",
+    lastUpdated: "2026-07-16",
+  },
+  {
+    id: "src-wayne-county-official-candidate-list-2026",
+    name: "Wayne County Clerk — Official Candidate List, August 4, 2026 Primary",
+    type: "government",
+    url: "https://www.waynecounty.com/elected/clerk/election-information.aspx",
+    verificationStatus: "verified",
+    lastUpdated: "2026-06-08",
+    notes:
+      "Candidate names, parties, offices, and filing status were transcribed from official-candidate-list-08042026.pdf supplied by the project owner. The document was created June 8, 2026 and contains the Wayne County Clerk's 19-page official primary candidate list.",
   },
 
   // --- Candidate portrait sources (Wikimedia Commons-hosted photos,

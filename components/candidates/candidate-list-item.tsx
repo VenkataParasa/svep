@@ -28,7 +28,10 @@ export function CandidateListItem({
       href={`/candidates/${candidate.id}`}
       className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-accent/40"
     >
-      <PersonAvatar name={candidate.name} photoUrl={candidate.photoUrl} />
+      <PersonAvatar
+        name={candidate.name}
+        photoUrl={`/api/candidate-photo/${candidate.id}`}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-medium">{candidate.name}</span>

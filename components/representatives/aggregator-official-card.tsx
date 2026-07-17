@@ -229,7 +229,7 @@ export function AggregatorOfficialCard({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-6 flex-1">
+      {/* <CardContent className="pt-6 flex-1">
         <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           Inferred Policy Stances
@@ -286,7 +286,7 @@ export function AggregatorOfficialCard({
             </div>
           </div>
         )}
-      </CardContent>
+      </CardContent> */}
       {/* <CardFooter className="bg-muted/20 border-t py-3 px-6 text-xs text-muted-foreground flex items-center justify-between gap-3">
         <span className="truncate max-w-[220px]" title={ocdId}>{ocdId}</span>
         {profileHref && (

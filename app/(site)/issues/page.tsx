@@ -5,7 +5,7 @@ import { LiveIssuesClient } from "@/components/issues/live-issues-client";
 
 export const metadata = {
   title: "Civic Issues | Live API Integration",
-  description: "Explore civic issues backed by real-time legislative data.",
+  description: "Explore civic issues with recent legislation and news coverage.",
 };
 
 export const dynamic = "force-dynamic";

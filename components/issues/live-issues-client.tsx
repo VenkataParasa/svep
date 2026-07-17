@@ -10,7 +10,6 @@ import { LiveIssueCategory } from "@/lib/live-issues";
 export function LiveIssuesClient({ initialIssues }: { initialIssues: LiveIssueCategory[] }) {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
-  const location = searchParams.get("location") || undefined;
   const [query, setQuery] = React.useState(initialSearch);
 
   const filtered = initialIssues.filter((cat) => {
@@ -22,8 +21,12 @@ export function LiveIssuesClient({ initialIssues }: { initialIssues: LiveIssueCa
     const matchesBills = cat.bills.some(b => 
       b.title.toLowerCase().includes(q) || b.billNumber.toLowerCase().includes(q)
     );
+    const matchesNews = cat.news.some((article) =>
+      article.title.toLowerCase().includes(q) ||
+      article.source.toLowerCase().includes(q)
+    );
     
-    return matchesTitle || matchesBills;
+    return matchesTitle || matchesBills || matchesNews;
   });
 
   return (
@@ -32,7 +35,8 @@ export function LiveIssuesClient({ initialIssues }: { initialIssues: LiveIssueCa
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Civic Issues</h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Explore the active issues shaping Michigan. This page natively pulls real-time legislative bills directly from the authentic OpenStates API.
+            Explore active issues shaping Michigan through recent OpenStates
+            legislation and current publisher news coverage.
           </p>
         </div>
         <div className="relative w-full max-w-xs">
@@ -40,7 +44,7 @@ export function LiveIssuesClient({ initialIssues }: { initialIssues: LiveIssueCa
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search issues or bills..."
+            placeholder="Search issues, bills, or news..."
             className="pl-9"
           />
         </div>
@@ -48,7 +52,7 @@ export function LiveIssuesClient({ initialIssues }: { initialIssues: LiveIssueCa
 
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((cat) => (
-          <LiveIssueCard key={cat.id} category={cat} location={location} />
+          <LiveIssueCard key={cat.id} category={cat} />
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full py-10 text-center text-muted-foreground">

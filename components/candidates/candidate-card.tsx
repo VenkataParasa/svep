@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { PartyBadge } from "@/components/shared/party-badge";
-import { ConfidenceBadge } from "@/components/shared/confidence-badge";
 import type { Candidate } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +28,7 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
         <CardHeader className="flex-row items-start gap-3">
           <PersonAvatar
             name={candidate.name}
-            photoUrl={candidate.photoUrl}
+            photoUrl={`/api/candidate-photo/${candidate.id}`}
             size="lg"
           />
           <div className="min-w-0 flex-1">
