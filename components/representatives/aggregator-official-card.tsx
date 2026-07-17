@@ -47,6 +47,7 @@ export interface DistrictData {
     name: string;
     party: string;
     photo_url?: string;
+    photo_origin_url?: string;
     urls?: string[];
     phones?: string[];
     facebook?: string;
