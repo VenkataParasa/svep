@@ -83,3 +83,21 @@ Appendix: Vercel CLI Commands Used for Investigation
 - `vercel logs https://svp-7tz0rrrou-symphonize-poc-projects.vercel.app --limit 100`: Fetched logs for the specific deployment URL.
 - `vercel logs --request-id <ID>`: Queried logs for the exact failing request using the X-Vercel-Id header.
 - `vercel env ls`: Listed environment variables on Vercel to discover that OPENSTATES_API_KEY and CICERO_API_KEY were missing.
+
+---
+Issue: "The jurisdiction service is temporarily unavailable" (Azure & Vercel)
+Date: 2026-07-16
+Environment: Azure Container Apps / Vercel Production
+
+Symptoms:
+When searching for representatives or testing the jurisdiction lookup on the deployed cloud environments (Azure or Vercel), the UI returns an error: "Location could not be resolved. The jurisdiction service is temporarily unavailable." However, the exact same feature functions perfectly on localhost.
+
+Root Cause:
+The `locationLookup` cache table was missing from the live Neon PostgreSQL database. 
+1. **Schema Desync**: During a recent merge of the `address-search` branch, a new `LocationLookup` model was introduced into `prisma/schema.prisma`. 
+2. **Missing Migration**: The deployment pipeline automatically builds and pushes the updated codebase to Azure/Vercel, but it does NOT automatically run `npx prisma db push` against the live Neon database. As a result, the live database schema was strictly older than the application code.
+3. **Localhost False Positive**: The feature worked perfectly on `localhost` because the local Next.js environment silently fell back to connecting to the local SQLite database (`dev.db`), which *had* received the schema updates during local development of the `address-search` feature branch.
+4. **Error Masking**: When the cloud applications attempted to execute `prisma.locationLookup.upsert()`, the Neon database rejected the query with Prisma Error Code `P2021` ("The table public.LocationLookup does not exist in the current database"). The Next.js API route aggressively caught this database failure and intentionally masked it behind a generic "The jurisdiction service is temporarily unavailable" user-facing 502 error.
+
+Resolution:
+Ran `npx prisma db push` locally using the production `.env` credentials. This command securely connected to the live Neon Postgres database and generated the missing `LocationLookup` table on the fly. The cloud applications (which maintain active connection pools) immediately recognized the new table, permanently resolving the 502 error without requiring a code redeployment.

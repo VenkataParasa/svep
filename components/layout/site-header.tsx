@@ -86,11 +86,10 @@ export function SiteHeader() {
 
         <nav className="hidden min-w-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
-            <Tooltip>
+            <Tooltip key={item.href}>
               <TooltipTrigger
                 render={
                   <Link
-                    key={item.href}
                     href={
                       menu_disabled.includes(item.label)
                         ? ""
