@@ -15,7 +15,7 @@ import {
 } from "@/lib/official-government-photo";
 
 const CICERO_BASE_URL = "https://app.cicerodata.com/v3.1";
-const LOCATION_CACHE_VERSION = "verified-official-photos-v2";
+const LOCATION_CACHE_VERSION = "verified-official-photos-v3";
 
 type CiceroDistrict = {
   id?: number;
