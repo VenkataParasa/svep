@@ -439,6 +439,7 @@ export async function GET(request: NextRequest) {
               title: official.office?.title ?? "Elected official",
               party: official.party || "Nonpartisan/Unknown",
               photoUrl: photoUrl && id ? `/api/representative-photo/${id}` : "",
+              fallbackPhotoUrl: photoUrl || "",
               website: official.urls?.[0] ?? null,
             }));
 

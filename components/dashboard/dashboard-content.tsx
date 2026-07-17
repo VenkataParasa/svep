@@ -23,6 +23,7 @@ interface CurrentOfficial {
   level: GovLevel;
   party: Party;
   photoUrl: string;
+  fallbackPhotoUrl?: string;
 }
 
 type DynamicDistrict = {
@@ -35,6 +36,7 @@ type DynamicDistrict = {
     title: string;
     party: string;
     photoUrl: string;
+    fallbackPhotoUrl?: string;
   }>;
 };
 
@@ -223,6 +225,7 @@ export function DashboardContent() {
                 level: levelFromDistrict(district.type),
                 party: partyFromCicero(official.party),
                 photoUrl: official.photoUrl,
+                fallbackPhotoUrl: official.fallbackPhotoUrl,
               },
             ];
           })

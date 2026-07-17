@@ -8,7 +8,7 @@ export function RepresentativeListItem({
   representative,
   officeAsTag = false,
 }: {
-  representative: Pick<Representative, "id" | "name" | "office" | "party" | "photoUrl">;
+  representative: Pick<Representative, "id" | "name" | "office" | "party" | "photoUrl"> & { fallbackPhotoUrl?: string };
   officeAsTag?: boolean;
 }) {
   return (
@@ -19,6 +19,7 @@ export function RepresentativeListItem({
       <PersonAvatar
         name={representative.name}
         photoUrl={representative.photoUrl}
+        fallbackUrl={representative.fallbackPhotoUrl}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
