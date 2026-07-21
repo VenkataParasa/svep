@@ -46,6 +46,9 @@ model Representative {
   jurisdiction     String
   district         String?
   photoUrl         String?
+  photoData        Bytes?
+  photoContentType String?
+  photoStoredAt    DateTime?
   isDemoPhoto      Boolean  @default(false)
   confidence       String   // "verified", "demo-data"
   bio              String?

@@ -86,11 +86,10 @@ export function SiteHeader() {
 
         <nav className="hidden min-w-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
-            <Tooltip>
+            <Tooltip key={item.href}>
               <TooltipTrigger
                 render={
                   <Link
-                    key={item.href}
                     href={
                       menu_disabled.includes(item.label)
                         ? ""
@@ -158,19 +157,21 @@ export function SiteHeader() {
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-1 px-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={withLocation(item.href)}
-                    className={cn(
-                      "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                      pathname === item.href &&
-                        "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {navItems
+                  .filter((item) => !menu_disabled.includes(item.label))
+                  .map((item) => (
+                    <Link
+                      key={item.href}
+                      href={withLocation(item.href)}
+                      className={cn(
+                        "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                        pathname === item.href &&
+                          "bg-accent text-accent-foreground"
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
               </nav>
             </SheetContent>
           </Sheet>
